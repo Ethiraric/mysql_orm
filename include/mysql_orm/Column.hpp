@@ -16,19 +16,19 @@ template <typename Field>
 char const* getFieldSQLType();
 
 template <>
-char const* getFieldSQLType<std::string>()
+inline char const* getFieldSQLType<std::string>()
 {
   return "TEXT";
 }
 
 template <>
-char const* getFieldSQLType<int32_t>()
+inline char const* getFieldSQLType<int32_t>()
 {
   return "INTEGER";
 }
 
 template <>
-char const* getFieldSQLType<uint32_t>()
+inline char const* getFieldSQLType<uint32_t>()
 {
   return "INTEGER UNSIGNED";
 }
