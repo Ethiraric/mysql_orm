@@ -17,7 +17,7 @@ struct Record
 using mysql_orm::make_column;
 using mysql_orm::make_table;
 
-TEST_CASE("Create statement")
+TEST_CASE("Create statement", "[Table]")
 {
   auto t = make_table("record",
                       make_column<&Record::id>("id"),
