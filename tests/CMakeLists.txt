@@ -12,6 +12,7 @@ include_directories(
 #sources files
 set(SRCS
   main.cpp
+  test_Column.cpp
 )
 
 #binary
