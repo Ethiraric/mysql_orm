@@ -40,11 +40,11 @@ public:
   explicit Column(std::string name) noexcept : column_name{std::move(name)}
   {
   }
-  Column(Column const& b) noexcept = default;
+  Column(Column const& b) = default;
   Column(Column&& b) noexcept = default;
   ~Column() noexcept = default;
 
-  Column& operator=(Column const& rhs) noexcept = default;
+  Column& operator=(Column const& rhs) = default;
   Column& operator=(Column&& rhs) noexcept = default;
 
   std::string getSchema() const
@@ -64,11 +64,11 @@ public:
   explicit Column(std::string name) noexcept : column_name{std::move(name)}
   {
   }
-  Column(Column const& b) noexcept = default;
+  Column(Column const& b) = default;
   Column(Column&& b) noexcept = default;
   ~Column() noexcept = default;
 
-  Column& operator=(Column const& rhs) noexcept = default;
+  Column& operator=(Column const& rhs) = default;
   Column& operator=(Column&& rhs) noexcept = default;
 
   std::string getSchema() const
