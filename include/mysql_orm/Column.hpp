@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 
 #include <mysql_orm/TypeTraits.hpp>
@@ -50,6 +51,29 @@ public:
   {
     return '`' + this->column_name + '`' + ' ' + getFieldSQLType<Field>() +
            " NOT NULL";
+  }
+
+private:
+  std::string column_name;
+};
+
+template <typename Model, typename Field, std::optional<Field> Model::*attr>
+class Column<Model, std::optional<Field>, attr>
+{
+public:
+  explicit Column(std::string name) noexcept : column_name{std::move(name)}
+  {
+  }
+  Column(Column const& b) noexcept = default;
+  Column(Column&& b) noexcept = default;
+  ~Column() noexcept = default;
+
+  Column& operator=(Column const& rhs) noexcept = default;
+  Column& operator=(Column&& rhs) noexcept = default;
+
+  std::string getSchema() const
+  {
+    return '`' + this->column_name + '`' + ' ' + getFieldSQLType<Field>();
   }
 
 private:
