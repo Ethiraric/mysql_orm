@@ -102,7 +102,7 @@ public:
   }
 
 private:
-  std::string column_name;
+  std::string const column_name;
   ColumnTags tags;
 };
 

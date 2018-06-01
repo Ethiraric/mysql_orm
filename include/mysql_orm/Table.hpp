@@ -44,7 +44,7 @@ public:
   }
 
 private:
-  std::string table_name;
+  std::string const table_name;
   std::tuple<Columns...> columns;
 };
 
