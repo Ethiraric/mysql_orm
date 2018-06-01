@@ -4,22 +4,7 @@
 
 #include <catch.hpp>
 
-namespace
-{
-struct Record
-{
-  mysql_orm::id_t id;
-  int i;
-  std::string s;
-};
-
-struct RecordWithOptionals
-{
-  std::optional<mysql_orm::id_t> id;
-  std::optional<int> i;
-  std::optional<std::string> s;
-};
-}
+#include <Record.hh>
 
 TEST_CASE("Create fields", "[Column]")
 {
