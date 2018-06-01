@@ -14,8 +14,10 @@ set(SRCS
   main.cpp
   test_Column.cpp
   test_ColumnTags.cpp
+  test_Database.cpp
   test_Table.cpp
 )
 
 #binary
 add_executable(mysql_orm_tests ${SRCS})
+target_link_libraries(mysql_orm_tests mysqlclient)
