@@ -101,13 +101,13 @@ private:
 };
 
 template <auto AttributePtr, typename... Tags>
-auto make_column(std::string name, Tags&&... tagattributes)
+auto make_column(std::string name, Tags... tagattributes)
 {
   using class_t =
       typename AttributePtrDissector<decltype(AttributePtr)>::class_t;
   using attribute_t =
       typename AttributePtrDissector<decltype(AttributePtr)>::attribute_t;
-  constexpr auto tags = ColumnTags{std::forward<Tags>(tagattributes)...};
+  constexpr auto tags = ColumnTags{tagattributes...};
   return Column<class_t, attribute_t, AttributePtr>{std::move(name), tags};
 }
 }
