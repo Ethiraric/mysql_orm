@@ -6,6 +6,7 @@
 #include <optional>
 #include <string>
 
+#include <mysql_orm/ColumnTags.hpp>
 #include <mysql_orm/TypeTraits.hpp>
 
 namespace mysql_orm
@@ -37,8 +38,11 @@ template <typename Model, typename Field, Field Model::*attr>
 class Column
 {
 public:
-  explicit Column(std::string name) noexcept : column_name{std::move(name)}
+  Column(std::string name, ColumnTags t = ColumnTags{}) noexcept
+    : column_name{std::move(name)}, tags{t}
   {
+    if (this->tags.nullable == Tristate::Undefined)
+      this->tags.nullable = Tristate::Off;
   }
   Column(Column const& b) = default;
   Column(Column&& b) noexcept = default;
@@ -49,20 +53,29 @@ public:
 
   std::string getSchema() const
   {
-    return '`' + this->column_name + '`' + ' ' + getFieldSQLType<Field>() +
-           " NOT NULL";
+    auto const tagstr = this->tags.toString();
+    auto schema = std::string{};
+
+    schema = '`' + this->column_name + '`' + ' ' + getFieldSQLType<Field>();
+    if (!tagstr.empty())
+      schema += ' ' + tagstr;
+    return schema;
   }
 
 private:
   std::string column_name;
+  ColumnTags tags;
 };
 
 template <typename Model, typename Field, std::optional<Field> Model::*attr>
 class Column<Model, std::optional<Field>, attr>
 {
 public:
-  explicit Column(std::string name) noexcept : column_name{std::move(name)}
+  explicit Column(std::string name, ColumnTags t = ColumnTags{}) noexcept
+    : column_name{std::move(name)}, tags{t}
   {
+    if (this->tags.nullable == Tristate::Undefined)
+      this->tags.nullable = Tristate::On;
   }
   Column(Column const& b) = default;
   Column(Column&& b) noexcept = default;
@@ -73,21 +86,29 @@ public:
 
   std::string getSchema() const
   {
-    return '`' + this->column_name + '`' + ' ' + getFieldSQLType<Field>();
+    auto const tagstr = this->tags.toString();
+    auto schema = std::string{};
+
+    schema = '`' + this->column_name + '`' + ' ' + getFieldSQLType<Field>();
+    if (!tagstr.empty())
+      schema += ' ' + tagstr;
+    return schema;
   }
 
 private:
   std::string column_name;
+  ColumnTags tags;
 };
 
-template <auto AttributePtr>
-auto make_column(std::string name)
+template <auto AttributePtr, typename... Tags>
+auto make_column(std::string name, Tags&&... tagattributes)
 {
   using class_t =
       typename AttributePtrDissector<decltype(AttributePtr)>::class_t;
   using attribute_t =
       typename AttributePtrDissector<decltype(AttributePtr)>::attribute_t;
-  return Column<class_t, attribute_t, AttributePtr>{std::move(name)};
+  constexpr auto tags = ColumnTags{std::forward<Tags>(tagattributes)...};
+  return Column<class_t, attribute_t, AttributePtr>{std::move(name), tags};
 }
 }
 

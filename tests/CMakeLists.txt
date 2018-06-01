@@ -13,6 +13,7 @@ include_directories(
 set(SRCS
   main.cpp
   test_Column.cpp
+  test_ColumnTags.cpp
   test_Table.cpp
 )
 
