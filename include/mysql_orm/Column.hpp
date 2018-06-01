@@ -38,6 +38,9 @@ template <typename Model, typename Field, Field Model::*attr>
 class Column
 {
 public:
+  using model_type = Model;
+  using field_type = Field;
+
   Column(std::string name, ColumnTags t = ColumnTags{}) noexcept
     : column_name{std::move(name)}, tags{t}
   {
@@ -71,6 +74,9 @@ template <typename Model, typename Field, std::optional<Field> Model::*attr>
 class Column<Model, std::optional<Field>, attr>
 {
 public:
+  using model_type = Model;
+  using field_type = Field;
+
   explicit Column(std::string name, ColumnTags t = ColumnTags{}) noexcept
     : column_name{std::move(name)}, tags{t}
   {

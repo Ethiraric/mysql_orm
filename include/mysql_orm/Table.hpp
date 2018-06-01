@@ -18,6 +18,8 @@ public:
   explicit Table(std::string name, Columns&&... cols)
     : table_name{std::move(name)}, columns{std::forward_as_tuple(cols...)}
   {
+    static_assert(ColumnsMatch_v<Columns...>,
+                  "Columns do not refer to the same model type");
   }
   Table(Table const& b) = default;
   Table(Table&& b) noexcept = default;
