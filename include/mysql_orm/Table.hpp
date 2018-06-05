@@ -5,6 +5,7 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 #include <mysql_orm/Column.hpp>
 #include <mysql_orm/Utils.hpp>
@@ -18,10 +19,31 @@ struct ColumnAttributeGetter
   static inline constexpr auto value = Column::attribute;
 };
 
+template <typename Table, auto Attr, auto... Attrs>
+struct ColumnNamesJoiner
+{
+  static std::string join(Table const& t)
+  {
+    return '`' + t.template getColumn<Attr>().getName() + "`, " +
+           ColumnNamesJoiner<Table, Attrs...>::join(t);
+  }
+};
+
+template <typename Table, auto Attr>
+struct ColumnNamesJoiner<Table, Attr>
+{
+  static std::string join(Table const& t)
+  {
+    return '`' + t.template getColumn<Attr>().getName() + '`';
+  }
+};
+
 template <typename... Columns>
 class Table
 {
 public:
+  using model_type = ColumnModel_t<Columns...>;
+
   explicit Table(std::string name, Columns&&... cols)
     : table_name{std::move(name)}, columns{std::forward_as_tuple(cols...)}
   {
@@ -50,11 +72,37 @@ public:
     return ss.str();
   }
 
-  template <auto Attr>
-  auto& getColumn()
+  template <auto... Attrs>
+  std::stringstream select() const
   {
-    using Column_t = typename
-        meta::FindMappedValue<ColumnAttributeGetter, Attr, Columns...>::type;
+    auto ss = std::stringstream{};
+
+    ss << "SELECT " << ColumnNamesJoiner<Table, Attrs...>::join(*this) << ' ';
+    ss << "FROM `" << this->table_name << '`';
+    return ss;
+  }
+
+  std::stringstream selectAll() const
+  {
+    auto ss = std::stringstream{};
+    auto i = std::size_t{0};
+
+    ss << "SELECT ";
+    for_each_tuple(this->columns, [&](auto const& col) {
+      ss << '`' << col.getName() << '`';
+      if (++i < std::tuple_size<decltype(this->columns)>())
+        ss << ',' << ' ';
+    });
+    ss << " FROM `" << this->table_name << '`';
+    return ss;
+  }
+
+
+  template <auto Attr>
+  auto const& getColumn() const noexcept
+  {
+    using Column_t = typename meta::
+        FindMappedValue<ColumnAttributeGetter, Attr, Columns...>::type;
     static_assert(!std::is_same_v<Column_t, void>, "Failed to find attribute");
     return std::get<Column_t>(this->columns);
   }

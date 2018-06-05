@@ -43,6 +43,15 @@ struct ColumnsMatch : ColumnsMatchModel<typename Column::model_type, Columns...>
 
 template <typename Column, typename... Columns>
 inline constexpr auto ColumnsMatch_v = ColumnsMatch<Column, Columns...>::value;
+
+template <typename Column, typename... Columns>
+struct ColumnModel
+{
+  using type = typename Column::model_type;
+};
+
+template <typename... Columns>
+using ColumnModel_t = typename ColumnModel<Columns...>::type;
 }
 
 #endif /* !MYSQL_ORM_UTILS_HPP_ */

@@ -66,6 +66,11 @@ public:
     return schema;
   }
 
+  std::string const& getName() const noexcept
+  {
+    return this->column_name;
+  }
+
 private:
   std::string column_name;
   ColumnTags tags;
@@ -101,6 +106,11 @@ public:
     if (!tagstr.empty())
       schema += ' ' + tagstr;
     return schema;
+  }
+
+  std::string const& getName() const noexcept
+  {
+    return this->column_name;
   }
 
 private:

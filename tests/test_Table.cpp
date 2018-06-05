@@ -34,3 +34,31 @@ TEST_CASE("Create statement", "[Table]")
   //                       make_column<&Record::s>("foo"));
   // }
 }
+
+TEST_CASE("Selection statement", "[Table]")
+{
+  SECTION("Simple record")
+  {
+    SECTION("Select all")
+    {
+      auto t = make_table("record",
+                          make_column<&MixedRecord::id>("id"),
+                          make_column<&MixedRecord::i>("i"),
+                          make_column<&MixedRecord::s>("foo"));
+      CHECK(t.selectAll().str() ==
+            "SELECT `id`, `i`, `foo` "
+            "FROM `record`");
+    }
+
+    SECTION("Select some fields")
+    {
+      auto t = make_table("record",
+                          make_column<&MixedRecord::id>("id"),
+                          make_column<&MixedRecord::i>("i"),
+                          make_column<&MixedRecord::s>("foo"));
+      CHECK(t.select<&MixedRecord::id, &MixedRecord::s>().str() ==
+            "SELECT `id`, `foo` "
+            "FROM `record`");
+    }
+  }
+}
