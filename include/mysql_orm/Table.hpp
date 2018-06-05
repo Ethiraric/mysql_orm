@@ -8,9 +8,16 @@
 
 #include <mysql_orm/Column.hpp>
 #include <mysql_orm/Utils.hpp>
+#include <mysql_orm/meta/FindMapped.hpp>
 
 namespace mysql_orm
 {
+template <typename Column>
+struct ColumnAttributeGetter
+{
+  static inline constexpr auto value = Column::attribute;
+};
+
 template <typename... Columns>
 class Table
 {
@@ -41,6 +48,15 @@ public:
     });
     ss << '\n' << ')';
     return ss.str();
+  }
+
+  template <auto Attr>
+  auto& getColumn()
+  {
+    using Column_t = typename
+        meta::FindMappedValue<ColumnAttributeGetter, Attr, Columns...>::type;
+    static_assert(!std::is_same_v<Column_t, void>, "Failed to find attribute");
+    return std::get<Column_t>(this->columns);
   }
 
 private:

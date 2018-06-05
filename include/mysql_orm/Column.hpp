@@ -40,6 +40,7 @@ class Column
 public:
   using model_type = Model;
   using field_type = Field;
+  static inline constexpr auto attribute = attr;
 
   Column(std::string name, ColumnTags t = ColumnTags{}) noexcept
     : column_name{std::move(name)}, tags{t}
@@ -76,6 +77,7 @@ class Column<Model, std::optional<Field>, attr>
 public:
   using model_type = Model;
   using field_type = Field;
+  static inline constexpr auto attribute = attr;
 
   explicit Column(std::string name, ColumnTags t = ColumnTags{}) noexcept
     : column_name{std::move(name)}, tags{t}
