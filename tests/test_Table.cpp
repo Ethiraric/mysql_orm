@@ -45,7 +45,7 @@ TEST_CASE("Selection statement", "[Table]")
                           make_column<&MixedRecord::id>("id"),
                           make_column<&MixedRecord::i>("i"),
                           make_column<&MixedRecord::s>("foo"));
-      CHECK(t.selectAll().str() ==
+      CHECK(t.select().str() ==
             "SELECT `id`, `i`, `foo` "
             "FROM `record`");
     }

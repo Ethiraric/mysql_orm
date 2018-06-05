@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <mysql_orm/Column.hpp>
+#include <mysql_orm/Select.hpp>
 #include <mysql_orm/Utils.hpp>
 #include <mysql_orm/meta/FindMapped.hpp>
 
@@ -75,28 +76,8 @@ public:
   template <auto... Attrs>
   std::stringstream select() const
   {
-    auto ss = std::stringstream{};
-
-    ss << "SELECT " << ColumnNamesJoiner<Table, Attrs...>::join(*this) << ' ';
-    ss << "FROM `" << this->table_name << '`';
-    return ss;
+    return SelectQueryBuilder<void, Attrs...>::select(*this);
   }
-
-  std::stringstream selectAll() const
-  {
-    auto ss = std::stringstream{};
-    auto i = std::size_t{0};
-
-    ss << "SELECT ";
-    for_each_tuple(this->columns, [&](auto const& col) {
-      ss << '`' << col.getName() << '`';
-      if (++i < std::tuple_size<decltype(this->columns)>())
-        ss << ',' << ' ';
-    });
-    ss << " FROM `" << this->table_name << '`';
-    return ss;
-  }
-
 
   template <auto Attr>
   auto const& getColumn() const noexcept
@@ -108,6 +89,38 @@ public:
   }
 
 private:
+  template <typename Dummy = void, auto... Attrs>
+  struct SelectQueryBuilder
+  {
+    static std::stringstream select(Table const& t)
+    {
+      auto ss = std::stringstream{};
+
+      ss << "SELECT " << ColumnNamesJoiner<Table, Attrs...>::join(t) << ' ';
+      ss << "FROM `" << t.table_name << '`';
+      return ss;
+    }
+  };
+
+  template <typename Dummy>
+  struct SelectQueryBuilder<Dummy>
+  {
+    static std::stringstream select(Table const& t)
+    {
+      auto ss = std::stringstream{};
+      auto i = std::size_t{0};
+
+      ss << "SELECT ";
+      for_each_tuple(t.columns, [&](auto const& col) {
+        ss << '`' << col.getName() << '`';
+        if (++i < std::tuple_size<decltype(t.columns)>())
+          ss << ',' << ' ';
+      });
+      ss << " FROM `" << t.table_name << '`';
+      return ss;
+    }
+  };
+
   std::string const table_name;
   std::tuple<Columns...> columns;
 };
