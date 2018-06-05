@@ -74,7 +74,13 @@ public:
   }
 
   template <auto... Attrs>
-  std::stringstream select() const
+  auto select() const
+  {
+    return Select<Table, Attrs...>(*this);
+  }
+
+  template <auto... Attrs>
+  std::stringstream selectss() const
   {
     return SelectQueryBuilder<void, Attrs...>::select(*this);
   }

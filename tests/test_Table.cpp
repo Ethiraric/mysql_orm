@@ -8,6 +8,8 @@
 
 using mysql_orm::make_column;
 using mysql_orm::make_table;
+using mysql_orm::Where;
+using mysql_orm::c;
 
 TEST_CASE("Create statement", "[Table]")
 {
@@ -45,7 +47,7 @@ TEST_CASE("Selection statement", "[Table]")
                           make_column<&MixedRecord::id>("id"),
                           make_column<&MixedRecord::i>("i"),
                           make_column<&MixedRecord::s>("foo"));
-      CHECK(t.select().str() ==
+      CHECK(t.select().build() ==
             "SELECT `id`, `i`, `foo` "
             "FROM `record`");
     }
@@ -56,9 +58,26 @@ TEST_CASE("Selection statement", "[Table]")
                           make_column<&MixedRecord::id>("id"),
                           make_column<&MixedRecord::i>("i"),
                           make_column<&MixedRecord::s>("foo"));
-      CHECK(t.select<&MixedRecord::id, &MixedRecord::s>().str() ==
+      CHECK(t.select<&MixedRecord::id, &MixedRecord::s>().build() ==
             "SELECT `id`, `foo` "
             "FROM `record`");
+    }
+  }
+}
+
+TEST_CASE("Where clause", "[Table]")
+{
+  SECTION("Simple record")
+  {
+    SECTION("Where id=1")
+    {
+      auto t = make_table("record",
+                          make_column<&MixedRecord::id>("id"),
+                          make_column<&MixedRecord::i>("i"),
+                          make_column<&MixedRecord::s>("foo"));
+      CHECK(t.select()(Where{c<&MixedRecord::id>{} == 1}).build() ==
+            "SELECT `id`, `i`, `foo` "
+            "FROM `record` WHERE `id`=1");
     }
   }
 }
