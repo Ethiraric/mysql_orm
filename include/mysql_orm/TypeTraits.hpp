@@ -12,6 +12,15 @@ struct AttributePtrDissector<Attribute Class::*>
   using class_t = Class;
   using attribute_t = Attribute;
 };
+
+template <typename AttributePtr>
+struct AttributeGetter
+{
+  using type = typename AttributePtrDissector<AttributePtr>::attribute_t;
+};
+
+template <typename AttributePtr>
+using AttributeGetter_t = typename AttributeGetter<AttributePtr>::type;
 }
 
 #endif /* !MYSQL_ORM_TYPETRAITS_HPP_ */

@@ -7,19 +7,16 @@
 #include <utility>
 #include <vector>
 
+#include <mysql/mysql.h>
+
 #include <mysql_orm/Column.hpp>
 #include <mysql_orm/Select.hpp>
 #include <mysql_orm/Utils.hpp>
+#include <mysql_orm/meta/ColumnAttributeGetter.hpp>
 #include <mysql_orm/meta/FindMapped.hpp>
 
 namespace mysql_orm
 {
-template <typename Column>
-struct ColumnAttributeGetter
-{
-  static inline constexpr auto value = Column::attribute;
-};
-
 template <typename Table, auto Attr, auto... Attrs>
 struct ColumnNamesJoiner
 {
@@ -73,10 +70,17 @@ public:
     return ss.str();
   }
 
-  template <auto... Attrs>
-  auto select() const
+  auto select(MYSQL& mysql) const
   {
-    return Select<Table, Attrs...>(*this);
+    return Select<Table,
+                  meta::MapValue_v<meta::ColumnAttributeGetter, Columns>...>(
+        mysql, *this);
+  }
+
+  template <auto... Attrs>
+  auto select(MYSQL& mysql) const
+  {
+    return Select<Table, Attrs...>(mysql, *this);
   }
 
   template <auto... Attrs>
@@ -89,9 +93,21 @@ public:
   auto const& getColumn() const noexcept
   {
     using Column_t = typename meta::
-        FindMappedValue<ColumnAttributeGetter, Attr, Columns...>::type;
+        FindMappedValue<meta::ColumnAttributeGetter, Attr, Columns...>::type;
     static_assert(!std::is_same_v<Column_t, void>, "Failed to find attribute");
     return std::get<Column_t>(this->columns);
+  }
+
+  static void bindAll(model_type& model, std::vector<MYSQL_BIND>& out_binds)
+  {
+    StatementBinder<model_type,
+                    meta::MapValue_v<meta::ColumnAttributeGetter,
+                                     Columns>...>::bind(model, &out_binds[0]);
+  }
+
+  size_t getNbColumns() const noexcept
+  {
+    return sizeof...(Columns);
   }
 
 private:

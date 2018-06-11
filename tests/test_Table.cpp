@@ -5,11 +5,12 @@
 #include <string>
 
 #include <Record.hh>
+#include <Utils.hh>
 
+using mysql_orm::c;
 using mysql_orm::make_column;
 using mysql_orm::make_table;
 using mysql_orm::Where;
-using mysql_orm::c;
 
 TEST_CASE("Create statement", "[Table]")
 {
@@ -47,7 +48,7 @@ TEST_CASE("Selection statement", "[Table]")
                           make_column<&MixedRecord::id>("id"),
                           make_column<&MixedRecord::i>("i"),
                           make_column<&MixedRecord::s>("foo"));
-      CHECK(t.select().build() ==
+      CHECK(t.select(dangling_ref<MYSQL>()).buildquery() ==
             "SELECT `id`, `i`, `foo` "
             "FROM `record`");
     }
@@ -58,7 +59,8 @@ TEST_CASE("Selection statement", "[Table]")
                           make_column<&MixedRecord::id>("id"),
                           make_column<&MixedRecord::i>("i"),
                           make_column<&MixedRecord::s>("foo"));
-      CHECK(t.select<&MixedRecord::id, &MixedRecord::s>().build() ==
+      CHECK(t.select<&MixedRecord::id, &MixedRecord::s>(dangling_ref<MYSQL>())
+                .buildquery() ==
             "SELECT `id`, `foo` "
             "FROM `record`");
     }
@@ -75,7 +77,8 @@ TEST_CASE("Where clause", "[Table]")
                           make_column<&MixedRecord::id>("id"),
                           make_column<&MixedRecord::i>("i"),
                           make_column<&MixedRecord::s>("foo"));
-      CHECK(t.select()(Where{c<&MixedRecord::id>{} == 1}).build() ==
+      CHECK(t.select(dangling_ref<MYSQL>())(Where{c<&MixedRecord::id>{} == 1})
+                .buildquery() ==
             "SELECT `id`, `i`, `foo` "
             "FROM `record` WHERE `id`=1");
     }

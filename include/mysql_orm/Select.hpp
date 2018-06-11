@@ -4,6 +4,10 @@
 #include <sstream>
 #include <utility>
 
+#include <mysql/mysql.h>
+
+#include <mysql_orm/Statement.hpp>
+#include <mysql_orm/StatementBinder.hpp>
 #include <mysql_orm/Where.hpp>
 
 namespace mysql_orm
@@ -12,7 +16,9 @@ template <typename Table, auto... Attrs>
 class Select
 {
 public:
-  explicit Select(Table const& t) noexcept : table{t}
+  using model_type = typename Table::model_type;
+
+  Select(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{t}
   {
   }
   Select(Select const& b) noexcept = default;
@@ -25,20 +31,45 @@ public:
   template <typename Condition>
   WhereQuery<Select, Table, Condition> operator()(Where<Condition> where)
   {
-    return WhereQuery{*this, this->table.get(), std::move(where.condition)};
+    return WhereQuery{*this->mysql_handle,
+                      *this,
+                      this->table.get(),
+                      std::move(where.condition)};
   }
 
-  std::string build() const
+  std::string buildquery() const
   {
-    return this->buildss().str();
+    return this->buildqueryss().str();
   }
 
-  std::stringstream buildss() const
+  std::stringstream buildqueryss() const
   {
     return this->table.get().template selectss<Attrs...>();
   }
 
+  Statement<model_type> build() const
+  {
+    return Statement<model_type>{
+        *this->mysql_handle, this->buildquery(), this->getNbOutputSlots()};
+  }
+
+  size_t getNbOutputSlots() const noexcept
+  {
+    return sizeof...(Attrs) > 0 ? sizeof...(Attrs) : this->table.getNbColumns();
+  }
+
+  void bindOutTo(model_type& model, std::vector<MYSQL_BIND>& out_binds)
+  {
+    if constexpr (sizeof...(Attrs) > 0)
+      StatementBinder<model_type, Attrs...>::bind(model, &out_binds[0]);
+    else
+      Table::bindAll(model, out_binds);
+  }
+
 private:
+  // May not be nullptr. Can't use std::reference_wrapper since MYSQL is
+  // incomplete.
+  MYSQL* mysql_handle;
   std::reference_wrapper<Table const> table;
 };
 }

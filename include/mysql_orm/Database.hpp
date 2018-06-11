@@ -8,9 +8,17 @@
 
 #include <mysql_orm/Exception.hh>
 #include <mysql_orm/Table.hpp>
+#include <mysql_orm/meta/AllSame.hpp>
+#include <mysql_orm/meta/FindMapped.hpp>
 
 namespace mysql_orm
 {
+template <typename Table>
+struct TableModelGetter
+{
+  using type = typename std::remove_reference_t<Table>::model_type;
+};
+
 template <typename... Tables>
 class Database
 {
@@ -51,6 +59,30 @@ public:
     if (mysql_real_query(this->handle.get(), query.c_str(), query.size()))
       throw MySQLQueryException(mysql_errno(this->handle.get()),
                                 mysql_error(this->handle.get()));
+  }
+
+  template <typename Model>
+  auto select()
+  {
+    using Table_t =
+        typename meta::FindMapped<TableModelGetter, Model, Tables...>::type;
+    static_assert(!std::is_same_v<Table_t, void>,
+                  "Failed to find table for model");
+    return std::get<Table_t>(this->tables).template select<>(*this->handle);
+  }
+
+  template <auto Attr, auto... Attrs>
+  auto select()
+  {
+    static_assert(meta::AllSame_v<AttributeGetter_t<decltype(Attr)>,
+                                  AttributeGetter_t<decltype(Attrs)>...>,
+                  "Attributes do not refer to the same model");
+    using Model_t = AttributeGetter_t<decltype(Attr)>;
+    using Table_t = meta::FindMapped<TableModelGetter, Model_t, Tables...>;
+    static_assert(!std::is_same_v<Table_t, void>,
+                  "Failed to find table for model");
+    return std::get<Table_t>(this->tables)
+        .template select<Attr, Attrs...>(*this->handle);
   }
 
 private:

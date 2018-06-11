@@ -4,6 +4,8 @@
 #include <sstream>
 #include <utility>
 
+#include <mysql_orm/Statement.hpp>
+
 namespace mysql_orm
 {
 template <typename T>
@@ -84,8 +86,13 @@ template <typename Query, typename Table, typename Condition>
 class WhereQuery
 {
 public:
-  WhereQuery(Query q, Table const& t, Condition&& c) noexcept
-    : query{std::move(q)}, table{t}, condition{std::move(c)}
+  using model_type = typename Query::model_type;
+
+  WhereQuery(MYSQL& mysql, Query q, Table const& t, Condition&& c) noexcept
+    : mysql_handle{&mysql},
+      query{std::move(q)},
+      table{t},
+      condition{std::move(c)}
   {
   }
   WhereQuery(WhereQuery const& b) noexcept = default;
@@ -95,20 +102,39 @@ public:
   WhereQuery& operator=(WhereQuery const& rhs) noexcept = default;
   WhereQuery& operator=(WhereQuery&& rhs) noexcept = default;
 
-  std::stringstream buildss() const
+  std::stringstream buildqueryss() const
   {
-    auto ss = this->query.buildss();
+    auto ss = this->query.buildqueryss();
     ss << " WHERE ";
     this->condition.appendToQuery(ss, this->table.get());
     return ss;
   }
 
-  std::string build() const
+  std::string buildquery() const
   {
-    return this->buildss().str();
+    return this->buildqueryss().str();
+  }
+
+  Statement<model_type> build() const
+  {
+    return Statement<model_type>{
+        *this->mysql_handle, this->buildquery(), this->getNbOutputSlots()};
+  }
+
+  size_t getNbOutputSlots() const noexcept
+  {
+    return this->query.getNbOutputSlots();
+  }
+
+  void bindOutTo(model_type& model, std::vector<MYSQL_BIND>& out_binds)
+  {
+    this->query.bindOutTo(model, out_binds);
   }
 
 private:
+  // May not be nullptr. Can't use std::reference_wrapper since MYSQL is
+  // incomplete.
+  MYSQL* mysql_handle;
   Query query;
   std::reference_wrapper<Table const> table;
   Condition condition;
