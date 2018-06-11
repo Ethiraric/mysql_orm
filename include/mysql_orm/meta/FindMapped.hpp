@@ -32,19 +32,17 @@ template <template <typename> typename Function,
           typename T,
           typename... List>
 struct FindMappedValue
-  : std::conditional<
-        TypeValEquals<Needle, MapValue_v<Function, T>>::value,
-        T,
-        typename FindMappedValue<Function, Needle, List...>::type>
+  : std::conditional<TypeValEquals<Needle, MapValue_v<Function, T>>::value,
+                     T,
+                     typename FindMappedValue<Function, Needle, List...>::type>
 {
 };
 
 template <template <typename> typename Function, auto Needle, typename T>
 struct FindMappedValue<Function, Needle, T>
-  : std::conditional<
-        TypeValEquals<Needle, MapValue_v<Function, T>>::value,
-        T,
-        void>
+  : std::conditional<TypeValEquals<Needle, MapValue_v<Function, T>>::value,
+                     T,
+                     void>
 {
 };
 }
