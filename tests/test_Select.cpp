@@ -1,8 +1,10 @@
-#include <mysql_orm/Database.hpp>
+#include <mysql_orm/Select.hpp>
 
 #include <catch.hpp>
 
 #include <Record.hh>
+#include <mysql_orm/Database.hpp>
+#include <mysql_orm/Where.hpp>
 
 using mysql_orm::make_column;
 using mysql_orm::make_database;
@@ -75,5 +77,18 @@ TEST_CASE("[Select] Select", "[Select]")
     CHECK(res[0] == Record{1, 1, "one"});
     CHECK(res[1] == Record{2, 2, "two"});
     CHECK(res[2] == Record{3, 4, "four"});
+  }
+
+  SECTION("Where query")
+  {
+    auto const res =
+        d.select<Record>()(mysql_orm::Where{mysql_orm::c<&Record::i>{} == 4})
+            .build()
+            .execute();
+    static_assert(
+        std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
+        "Wrong return type");
+    REQUIRE(res.size() == 1);
+    CHECK(res[0] == Record{3, 4, "four"});
   }
 }
