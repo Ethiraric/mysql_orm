@@ -35,7 +35,7 @@ TEST_CASE("[Select] Select statement", "[Select]")
   }
 }
 
-TEST_CASE("[Select] Selecting one record", "[Select]")
+TEST_CASE("[Select] Select", "[Select]")
 {
   auto table_records = make_table("records",
                                   make_column<&Record::id>("id"),
@@ -48,15 +48,32 @@ TEST_CASE("[Select] Selecting one record", "[Select]")
                          "mysql_orm_test_db",
                          table_records);
   d.recreate();
-  d.execute(R"(INSERT INTO `records` (`id`, `i`, `s`) VALUES (1, 1, "one"))");
+  d.execute(
+      "INSERT INTO `records` (`id`, `i`, `s`) VALUES "
+      R"((1, 1, "one"),)"
+      R"((2, 2, "two"),)"
+      R"((3, 4, "four"))");
 
-  SECTION("Select")
+  SECTION("One row")
   {
+    d.execute("DELETE FROM `records` WHERE `id`>1");
     auto const res = d.select<Record>().build().execute();
     static_assert(
         std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
         "Wrong return type");
     REQUIRE(res.size() == 1);
     CHECK(res[0] == Record{1, 1, "one"});
+  }
+
+  SECTION("All rows")
+  {
+    auto const res = d.select<Record>().build().execute();
+    static_assert(
+        std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
+        "Wrong return type");
+    REQUIRE(res.size() == 3);
+    CHECK(res[0] == Record{1, 1, "one"});
+    CHECK(res[1] == Record{2, 2, "two"});
+    CHECK(res[2] == Record{3, 4, "four"});
   }
 }
