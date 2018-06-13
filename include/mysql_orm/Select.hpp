@@ -8,6 +8,7 @@
 
 #include <mysql_orm/Statement.hpp>
 #include <mysql_orm/StatementBinder.hpp>
+#include <mysql_orm/StatementFinalizer.hpp>
 #include <mysql_orm/Where.hpp>
 
 namespace mysql_orm
@@ -47,23 +48,35 @@ public:
     return this->table.get().template selectss<Attrs...>();
   }
 
-  Statement<model_type> build() const
+  Statement<Select, model_type> build() const
   {
-    return Statement<model_type>{
-        *this->mysql_handle, this->buildquery(), this->getNbOutputSlots()};
+    return Statement<Select, model_type>{*this->mysql_handle, *this};
   }
 
   size_t getNbOutputSlots() const noexcept
   {
-    return sizeof...(Attrs) > 0 ? sizeof...(Attrs) : this->table.getNbColumns();
+    return sizeof...(Attrs) > 0 ? sizeof...(Attrs) : this->table.get().getNbColumns();
   }
 
-  void bindOutTo(model_type& model, std::vector<MYSQL_BIND>& out_binds)
+  void bindOutTo(model_type& model, std::vector<MYSQL_BIND>& out_binds) const
   {
     if constexpr (sizeof...(Attrs) > 0)
       StatementBinder<model_type, Attrs...>::bind(model, &out_binds[0]);
     else
       Table::bindAll(model, out_binds);
+  }
+
+  void finalizeBindings(model_type& model,
+                        std::vector<MYSQL_BIND>& binds,
+                        std::vector<unsigned long>& lengths,
+                        std::vector<my_bool>& are_null,
+                        std::vector<my_bool>& errors)
+  {
+    if constexpr (sizeof...(Attrs) > 0)
+    StatementFinalizer<model_type, Attrs...>::finalize(
+        model, &binds[0], &lengths[0], &are_null[0], &errors[0]);
+    else
+      Table::finalizeAll(model, binds, lengths, are_null, errors);
   }
 
 private:

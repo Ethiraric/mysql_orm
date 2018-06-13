@@ -115,10 +115,9 @@ public:
     return this->buildqueryss().str();
   }
 
-  Statement<model_type> build() const
+  Statement<WhereQuery, model_type> build() const
   {
-    return Statement<model_type>{
-        *this->mysql_handle, this->buildquery(), this->getNbOutputSlots()};
+    return Statement<WhereQuery, model_type>{*this->mysql_handle, *this};
   }
 
   size_t getNbOutputSlots() const noexcept
@@ -126,10 +125,20 @@ public:
     return this->query.getNbOutputSlots();
   }
 
-  void bindOutTo(model_type& model, std::vector<MYSQL_BIND>& out_binds)
+  void bindOutTo(model_type& model, std::vector<MYSQL_BIND>& out_binds) const
   {
     this->query.bindOutTo(model, out_binds);
   }
+
+  void finalizeBindings(model_type& model,
+                        std::vector<MYSQL_BIND>& binds,
+                        std::vector<unsigned long>& lengths,
+                        std::vector<my_bool>& are_null,
+                        std::vector<my_bool>& errors)
+  {
+    this->query.finalizeBindings(model, binds, lengths, are_null, errors);
+  }
+
 
 private:
   // May not be nullptr. Can't use std::reference_wrapper since MYSQL is

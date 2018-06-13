@@ -11,6 +11,8 @@
 
 #include <mysql_orm/Column.hpp>
 #include <mysql_orm/Select.hpp>
+#include <mysql_orm/StatementBinder.hpp>
+#include <mysql_orm/StatementFinalizer.hpp>
 #include <mysql_orm/Utils.hpp>
 #include <mysql_orm/meta/ColumnAttributeGetter.hpp>
 #include <mysql_orm/meta/FindMapped.hpp>
@@ -70,6 +72,11 @@ public:
     return ss.str();
   }
 
+  std::string const& getName() const noexcept
+  {
+    return this->table_name;
+  }
+
   auto select(MYSQL& mysql) const
   {
     return Select<Table,
@@ -103,6 +110,21 @@ public:
     StatementBinder<model_type,
                     meta::MapValue_v<meta::ColumnAttributeGetter,
                                      Columns>...>::bind(model, &out_binds[0]);
+  }
+
+  static void finalizeAll(model_type& model,
+                          std::vector<MYSQL_BIND>& binds,
+                          std::vector<unsigned long>& lengths,
+                          std::vector<my_bool>& are_null,
+                          std::vector<my_bool>& errors)
+  {
+    StatementFinalizer<model_type,
+                       meta::MapValue_v<meta::ColumnAttributeGetter,
+                                        Columns>...>::finalize(model,
+                                                               &binds[0],
+                                                               &lengths[0],
+                                                               &are_null[0],
+                                                               &errors[0]);
   }
 
   size_t getNbColumns() const noexcept
