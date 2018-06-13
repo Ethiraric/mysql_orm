@@ -85,6 +85,14 @@ public:
         .template select<Attr, Attrs...>(*this->handle);
   }
 
+  void recreate()
+  {
+    for_each_tuple(this->tables, [&](auto const& table) {
+      this->execute("DROP TABLE IF EXISTS `" + table.getName() + '`');
+      this->execute(table.getSchema());
+    });
+  }
+
 private:
   std::unique_ptr<MYSQL, decltype(&mysql_close)> handle;
   std::tuple<Tables...> tables;
