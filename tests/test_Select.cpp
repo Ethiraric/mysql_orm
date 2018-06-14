@@ -92,3 +92,60 @@ TEST_CASE("[Select] Select", "[Select]")
     CHECK(res[0] == Record{3, 4, "four"});
   }
 }
+
+TEST_CASE("[Select] Select with optionals", "[Select]")
+{
+  auto table_records = make_table("optional_records",
+                                  make_column<&RecordWithOptionals::id>("id"),
+                                  make_column<&RecordWithOptionals::i>("i"),
+                                  make_column<&RecordWithOptionals::s>("s"));
+  auto d = make_database("localhost",
+                         3306,
+                         "mysql_orm_test",
+                         "",
+                         "mysql_orm_test_db",
+                         table_records);
+  d.recreate();
+  d.execute(
+      "INSERT INTO `optional_records` (`id`, `i`, `s`) VALUES "
+      R"((1, 1, "one"),)"
+      R"((2, 2, "two"),)"
+      R"((3, 4, "four"))");
+
+  SECTION("One row")
+  {
+    d.execute("DELETE FROM `optional_records` WHERE `id`>1");
+    auto const res = d.select<RecordWithOptionals>().build().execute();
+    static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
+                                 std::vector<RecordWithOptionals>>,
+                  "Wrong return type");
+    REQUIRE(res.size() == 1);
+    CHECK(res[0] == RecordWithOptionals{1, 1, "one"});
+  }
+
+  SECTION("All rows")
+  {
+    auto const res = d.select<RecordWithOptionals>().build().execute();
+    static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
+                                 std::vector<RecordWithOptionals>>,
+                  "Wrong return type");
+    REQUIRE(res.size() == 3);
+    CHECK(res[0] == RecordWithOptionals{1, 1, "one"});
+    CHECK(res[1] == RecordWithOptionals{2, 2, "two"});
+    CHECK(res[2] == RecordWithOptionals{3, 4, "four"});
+  }
+
+  SECTION("Where query")
+  {
+    auto const res =
+        d.select<RecordWithOptionals>()(
+             mysql_orm::Where{mysql_orm::c<&RecordWithOptionals::i>{} == 4})
+            .build()
+            .execute();
+    static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
+                                 std::vector<RecordWithOptionals>>,
+                  "Wrong return type");
+    REQUIRE(res.size() == 1);
+    CHECK(res[0] == RecordWithOptionals{3, 4, "four"});
+  }
+}

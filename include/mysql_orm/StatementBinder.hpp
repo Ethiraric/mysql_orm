@@ -8,6 +8,8 @@
 #include <mysql/mysql.h>
 
 #include <mysql_orm/TypeTraits.hpp>
+#include <mysql_orm/meta/IsOptional.hpp>
+#include <mysql_orm/meta/LiftOptional.hpp>
 
 namespace mysql_orm
 {
@@ -18,15 +20,30 @@ struct SingleStatementBinder
 {
   using attribute_t =
       typename AttributePtrDissector<decltype(Attr)>::attribute_t;
+  static inline constexpr auto is_optional = meta::IsOptional_v<attribute_t>;
+  using column_data_t = std::conditional_t<is_optional,
+                                           meta::LiftOptional_t<attribute_t>,
+                                           attribute_t>;
 
   static void bind(Model& model, MYSQL_BIND& mysql_bind)
   {
-    auto& attr = model.*Attr;
-    static_assert(std::is_same_v<attribute_t, std::string> ||
-                      std::is_same_v<attribute_t, char*> ||
-                      std::is_integral_v<attribute_t>,
+    auto& attr = [&]() -> auto&
+    {
+      auto& field = model.*Attr;
+      if constexpr (is_optional)
+      {
+        if (!field)
+          field.emplace();
+        return *field;
+      }
+      else
+        return field;
+    }();
+    static_assert(std::is_same_v<column_data_t, std::string> ||
+                      std::is_same_v<column_data_t, char*> ||
+                      std::is_integral_v<column_data_t>,
                   "Unknown type");
-    if constexpr (std::is_same_v<attribute_t, std::string>)
+    if constexpr (std::is_same_v<column_data_t, std::string>)
     {
       // XXX(ethiraric): Find a way to correctly allocate it.
       attr.resize(65536);
@@ -34,7 +51,7 @@ struct SingleStatementBinder
       mysql_bind.buffer = &attr[0];
       mysql_bind.buffer_length = 65536;
     }
-    else if constexpr (std::is_same_v<attribute_t, char*>)
+    else if constexpr (std::is_same_v<column_data_t, char*>)
     {
       // XXX(ethiraric): Find a way to correctly allocate it.
       attr = new char[65536];
@@ -42,14 +59,14 @@ struct SingleStatementBinder
       mysql_bind.buffer = attr;
       mysql_bind.buffer_length = 65536;
     }
-    else if constexpr (std::is_integral_v<attribute_t>)
+    else if constexpr (std::is_integral_v<column_data_t>)
     {
-      static_assert(!std::is_integral_v<attribute_t> ||
-                        (std::is_integral_v<attribute_t> &&
+      static_assert(!std::is_integral_v<column_data_t> ||
+                        (std::is_integral_v<column_data_t> &&
                          (sizeof(attr) == 1 || sizeof(attr) == 2 ||
                           sizeof(attr) == 4 || sizeof(attr == 8))),
                     "Unknown integer type");
-      mysql_bind.is_unsigned = std::is_unsigned_v<attribute_t>;
+      mysql_bind.is_unsigned = std::is_unsigned_v<column_data_t>;
       mysql_bind.buffer = &attr;
       mysql_bind.buffer_length = sizeof(attr);
       if constexpr (sizeof(attr) == 1)

@@ -8,6 +8,8 @@
 #include <mysql/mysql.h>
 
 #include <mysql_orm/TypeTraits.hpp>
+#include <mysql_orm/meta/IsOptional.hpp>
+#include <mysql_orm/meta/LiftOptional.hpp>
 
 namespace mysql_orm
 {
@@ -18,6 +20,10 @@ struct SingleStatementFinalizer
 {
   using attribute_t =
       typename AttributePtrDissector<decltype(Attr)>::attribute_t;
+  static inline constexpr auto is_optional = meta::IsOptional_v<attribute_t>;
+  using column_data_t = std::conditional_t<is_optional,
+                                           meta::LiftOptional_t<attribute_t>,
+                                           attribute_t>;
 
   static void finalize(Model& model,
                        MYSQL_BIND const& /*mysql_bind*/,
@@ -25,19 +31,36 @@ struct SingleStatementFinalizer
                        my_bool& is_null,
                        my_bool& /*errorrray*/)
   {
-    auto& attr = model.*Attr;
-    static_assert(std::is_same_v<attribute_t, std::string> ||
-                      std::is_same_v<attribute_t, char*> ||
-                      std::is_integral_v<attribute_t>,
+    auto& attr = [&]() -> auto&
+    {
+      auto& field = model.*Attr;
+      if constexpr (is_optional)
+        return *field;
+      else
+        return field;
+    }();
+    static_assert(std::is_same_v<column_data_t, std::string> ||
+                      std::is_same_v<column_data_t, char*> ||
+                      std::is_integral_v<column_data_t>,
                   "Unknown type");
-    if constexpr (std::is_same_v<attribute_t, std::string>)
+
+    if constexpr (is_optional)
+    {
+      if (is_null)
+      {
+        (model.*Attr).reset();
+        return;
+      }
+    }
+
+    if constexpr (std::is_same_v<column_data_t, std::string>)
     {
       if (is_null)
         attr.clear();
       else
         attr.resize(length);
     }
-    else if constexpr (std::is_same_v<attribute_t, char*>)
+    else if constexpr (std::is_same_v<column_data_t, char*>)
     {
       auto* newtab = new char[length + 1];
       std::memcpy(newtab, attr, length);
