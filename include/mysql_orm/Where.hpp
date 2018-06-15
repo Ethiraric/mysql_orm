@@ -4,6 +4,7 @@
 #include <sstream>
 #include <utility>
 
+#include <mysql_orm/Limit.hpp>
 #include <mysql_orm/Statement.hpp>
 
 namespace mysql_orm
@@ -118,6 +119,13 @@ public:
   Statement<WhereQuery, model_type> build() const
   {
     return Statement<WhereQuery, model_type>{*this->mysql_handle, *this};
+  }
+
+  template <typename Limit>
+  LimitQuery<WhereQuery, Table, Limit> operator()(Limit limit)
+  {
+    return LimitQuery{
+        *this->mysql_handle, *this, this->table.get(), std::move(limit)};
   }
 
   size_t getNbOutputSlots() const noexcept

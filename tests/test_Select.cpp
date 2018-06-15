@@ -6,10 +6,13 @@
 #include <mysql_orm/Database.hpp>
 #include <mysql_orm/Where.hpp>
 
+using mysql_orm::c;
+using mysql_orm::Limit;
 using mysql_orm::make_column;
 using mysql_orm::make_database;
 using mysql_orm::make_table;
 using mysql_orm::MySQLException;
+using mysql_orm::Where;
 
 TEST_CASE("[Select] Select statement", "[Select]")
 {
@@ -110,6 +113,7 @@ TEST_CASE("[Select] Select with optionals", "[Select]")
       "INSERT INTO `optional_records` (`id`, `i`, `s`) VALUES "
       R"((1, 1, "one"),)"
       R"((2, 2, "two"),)"
+      R"((3, 4, "four"),)"
       R"((3, 4, "four"))");
 
   SECTION("One row")
@@ -147,5 +151,17 @@ TEST_CASE("[Select] Select with optionals", "[Select]")
                   "Wrong return type");
     REQUIRE(res.size() == 1);
     CHECK(res[0] == RecordWithOptionals{3, 4, "four"});
+  }
+
+  SECTION("Limit query")
+  {
+    auto const res =
+        d.select<RecordWithOptionals>()(Limit<2>{}).build().execute();
+    static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
+                                 std::vector<RecordWithOptionals>>,
+                  "Wrong return type");
+    REQUIRE(res.size() == 2);
+    CHECK(res[0] == RecordWithOptionals{1, 1, "one"});
+    CHECK(res[1] == RecordWithOptionals{2, 2, "two"});
   }
 }

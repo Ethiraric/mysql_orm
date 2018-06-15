@@ -6,6 +6,7 @@
 
 #include <mysql/mysql.h>
 
+#include <mysql_orm/Limit.hpp>
 #include <mysql_orm/Statement.hpp>
 #include <mysql_orm/StatementBinder.hpp>
 #include <mysql_orm/StatementFinalizer.hpp>
@@ -36,6 +37,13 @@ public:
                       *this,
                       this->table.get(),
                       std::move(where.condition)};
+  }
+
+  template <typename Limit>
+  LimitQuery<Select, Table, Limit> operator()(Limit limit)
+  {
+    return LimitQuery{
+        *this->mysql_handle, *this, this->table.get(), std::move(limit)};
   }
 
   std::string buildquery() const
