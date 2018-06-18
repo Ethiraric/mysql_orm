@@ -1,7 +1,9 @@
-#ifndef MYSQL_ORM_TYPETRAITS_HPP_
-#define MYSQL_ORM_TYPETRAITS_HPP_
+#ifndef MYSQL_ORM_META_ATTRIBUTEPTRDISSECTOR_HPP_
+#define MYSQL_ORM_META_ATTRIBUTEPTRDISSECTOR_HPP_
 
 namespace mysql_orm
+{
+namespace meta
 {
 template <typename AttributePtr>
 struct AttributePtrDissector;
@@ -22,5 +24,6 @@ struct AttributeGetter
 template <typename AttributePtr>
 using AttributeGetter_t = typename AttributeGetter<AttributePtr>::type;
 }
+}
 
-#endif /* !MYSQL_ORM_TYPETRAITS_HPP_ */
+#endif /* !MYSQL_ORM_META_ATTRIBUTEPTRDISSECTOR_HPP_ */

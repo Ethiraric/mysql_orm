@@ -7,7 +7,7 @@
 
 #include <mysql/mysql.h>
 
-#include <mysql_orm/TypeTraits.hpp>
+#include <mysql_orm/meta/AttributePtrDissector.hpp>
 #include <mysql_orm/meta/IsOptional.hpp>
 #include <mysql_orm/meta/LiftOptional.hpp>
 
@@ -19,7 +19,7 @@ template <typename Model, auto Attr>
 struct SingleStatementBinder
 {
   using attribute_t =
-      typename AttributePtrDissector<decltype(Attr)>::attribute_t;
+      typename meta::AttributePtrDissector<decltype(Attr)>::attribute_t;
   static inline constexpr auto is_optional = meta::IsOptional_v<attribute_t>;
   using column_data_t = std::conditional_t<is_optional,
                                            meta::LiftOptional_t<attribute_t>,

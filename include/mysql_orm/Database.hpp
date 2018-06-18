@@ -9,6 +9,7 @@
 #include <mysql_orm/Exception.hh>
 #include <mysql_orm/Table.hpp>
 #include <mysql_orm/meta/AllSame.hpp>
+#include <mysql_orm/meta/AttributePtrDissector.hpp>
 #include <mysql_orm/meta/FindMapped.hpp>
 
 namespace mysql_orm
@@ -74,10 +75,10 @@ public:
   template <auto Attr, auto... Attrs>
   auto select()
   {
-    static_assert(meta::AllSame_v<AttributeGetter_t<decltype(Attr)>,
-                                  AttributeGetter_t<decltype(Attrs)>...>,
+    static_assert(meta::AllSame_v<meta::AttributeGetter_t<decltype(Attr)>,
+                                  meta::AttributeGetter_t<decltype(Attrs)>...>,
                   "Attributes do not refer to the same model");
-    using Model_t = AttributeGetter_t<decltype(Attr)>;
+    using Model_t = meta::AttributeGetter_t<decltype(Attr)>;
     using Table_t = meta::FindMapped<TableModelGetter, Model_t, Tables...>;
     static_assert(!std::is_same_v<Table_t, void>,
                   "Failed to find table for model");
