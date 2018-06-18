@@ -5,6 +5,21 @@
 
 namespace mysql_orm
 {
+enum class OperatorType
+{
+  Equals,
+  NotEquals
+};
+
+template <OperatorType type>
+constexpr auto operatorTypeToString()
+{
+  if constexpr (type == OperatorType::Equals)
+    return '=';
+  else if constexpr (type == OperatorType::NotEquals)
+    return "<>";
+}
+
 template <typename T>
 struct OperandWrapper
 {
@@ -34,8 +49,8 @@ struct ref
 template <typename T>
 ref(T&)->ref<T>;
 
-template <typename Lhs, typename Rhs>
-struct EqualsClosure
+template <typename Lhs, typename Rhs, OperatorType type>
+struct OperatorClosure
 {
   using compare_tag = int;
 
@@ -43,16 +58,13 @@ struct EqualsClosure
   void appendToQuery(std::ostream& out, Table const& t) const
   {
     this->lhs.appendToQuery(out, t);
-    out << '=';
+    out << operatorTypeToString<type>();
     this->rhs.appendToQuery(out, t);
   }
 
   Lhs lhs;
   Rhs rhs;
 };
-
-template <typename Lhs, typename Rhs>
-EqualsClosure(Lhs, Rhs)->EqualsClosure<Lhs, Rhs>;
 
 template <auto attr>
 struct c
@@ -68,19 +80,20 @@ struct c
   template <typename T>
   auto operator==(T const& rhs)
   {
-    return EqualsClosure{*this, OperandWrapper<T>{rhs}};
+    return OperatorClosure<c, OperandWrapper<T>, OperatorType::Equals>{
+        *this, OperandWrapper<T>{rhs}};
   }
 
   template <auto other_attr>
   auto operator==(c<other_attr> const& rhs)
   {
-    return EqualsClosure{*this, rhs};
+    return OperatorClosure<c, decltype(rhs), OperatorType::Equals>{*this, rhs};
   }
 
   template <typename T>
   auto operator==(ref<T> const& rhs)
   {
-    return EqualsClosure{*this, rhs};
+    return OperatorClosure<c, decltype(rhs), OperatorType::Equals>{*this, rhs};
   }
 };
 }
