@@ -8,7 +8,11 @@ namespace mysql_orm
 enum class OperatorType
 {
   Equals,
-  NotEquals
+  NotEquals,
+  GreaterThan,
+  GreaterOrEquals,
+  LessThan,
+  LessOrEquals
 };
 
 template <OperatorType type>
@@ -18,6 +22,14 @@ constexpr auto operatorTypeToString()
     return '=';
   else if constexpr (type == OperatorType::NotEquals)
     return "<>";
+  else if constexpr (type == OperatorType::GreaterThan)
+    return ">";
+  else if constexpr (type == OperatorType::GreaterOrEquals)
+    return ">=";
+  else if constexpr (type == OperatorType::LessThan)
+    return "<";
+  else if constexpr (type == OperatorType::LessOrEquals)
+    return "<=";
 }
 
 template <typename T>
@@ -77,24 +89,33 @@ struct c
     out << '`' << t.template getColumn<attr>().getName() << '`';
   }
 
-  template <typename T>
-  auto operator==(T const& rhs)
-  {
-    return OperatorClosure<c, OperandWrapper<T>, OperatorType::Equals>{
-        *this, OperandWrapper<T>{rhs}};
+#define MAKE_OPERATORS(op, type)                                              \
+  template <typename T>                                                       \
+  auto operator op(T const& rhs)                                              \
+  {                                                                           \
+    return OperatorClosure<c, OperandWrapper<T>, OperatorType::type>{         \
+        *this, OperandWrapper<T>{rhs}};                                       \
+  }                                                                           \
+                                                                              \
+  template <auto other_attr>                                                  \
+  auto operator op(c<other_attr> const& rhs)                                  \
+  {                                                                           \
+    return OperatorClosure<c, decltype(rhs), OperatorType::type>{*this, rhs}; \
+  }                                                                           \
+                                                                              \
+  template <typename T>                                                       \
+  auto operator op(ref<T> const& rhs)                                         \
+  {                                                                           \
+    return OperatorClosure<c, decltype(rhs), OperatorType::type>{*this, rhs}; \
   }
 
-  template <auto other_attr>
-  auto operator==(c<other_attr> const& rhs)
-  {
-    return OperatorClosure<c, decltype(rhs), OperatorType::Equals>{*this, rhs};
-  }
-
-  template <typename T>
-  auto operator==(ref<T> const& rhs)
-  {
-    return OperatorClosure<c, decltype(rhs), OperatorType::Equals>{*this, rhs};
-  }
+  MAKE_OPERATORS(==, Equals);
+  MAKE_OPERATORS(!=, NotEquals);
+  MAKE_OPERATORS(>, GreaterThan);
+  MAKE_OPERATORS(>=, GreaterOrEquals);
+  MAKE_OPERATORS(<, LessThan);
+  MAKE_OPERATORS(<=, LessOrEquals);
+#undef MAKE_OPERATORS
 };
 }
 
