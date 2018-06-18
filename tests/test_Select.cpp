@@ -12,6 +12,7 @@ using mysql_orm::make_column;
 using mysql_orm::make_database;
 using mysql_orm::make_table;
 using mysql_orm::MySQLException;
+using mysql_orm::ref;
 using mysql_orm::Where;
 
 TEST_CASE("[Select] Select statement", "[Select]")
@@ -140,16 +141,48 @@ TEST_CASE("[Select] Select with optionals", "[Select]")
 
   SECTION("Where query")
   {
-    auto const res =
-        d.select<RecordWithOptionals>()(
-             mysql_orm::Where{mysql_orm::c<&RecordWithOptionals::i>{} == 4})
-            .build()
-            .execute();
-    static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
-                                 std::vector<RecordWithOptionals>>,
-                  "Wrong return type");
-    REQUIRE(res.size() == 1);
-    CHECK(res[0] == RecordWithOptionals{3, 4, "four"});
+    SECTION("With Value")
+    {
+      auto const res =
+          d.select<RecordWithOptionals>()(
+               mysql_orm::Where{mysql_orm::c<&RecordWithOptionals::i>{} == 4})
+              .build()
+              .execute();
+      static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
+                                   std::vector<RecordWithOptionals>>,
+                    "Wrong return type");
+      REQUIRE(res.size() == 1);
+      CHECK(res[0] == RecordWithOptionals{3, 4, "four"});
+    }
+
+    SECTION("With variable")
+    {
+      auto const i = 4;
+      auto const res =
+          d.select<RecordWithOptionals>()(
+               mysql_orm::Where{mysql_orm::c<&RecordWithOptionals::i>{} == i})
+              .build()
+              .execute();
+      static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
+                                   std::vector<RecordWithOptionals>>,
+                    "Wrong return type");
+      REQUIRE(res.size() == 1);
+      CHECK(res[0] == RecordWithOptionals{3, 4, "four"});
+    }
+
+    SECTION("With reference")
+    {
+      auto i = 3;
+      auto const query = d.select<RecordWithOptionals>()(
+          mysql_orm::Where{mysql_orm::c<&RecordWithOptionals::i>{} == ref{i}});
+      i = 4;
+      auto const res = query.build().execute();
+      static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
+                                   std::vector<RecordWithOptionals>>,
+                    "Wrong return type");
+      REQUIRE(res.size() == 1);
+      CHECK(res[0] == RecordWithOptionals{3, 4, "four"});
+    }
   }
 
   SECTION("Limit query")

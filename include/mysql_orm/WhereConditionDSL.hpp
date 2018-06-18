@@ -18,6 +18,22 @@ struct OperandWrapper
   T value;
 };
 
+template <typename T>
+struct ref
+{
+  template <typename Table>
+  void appendToQuery(std::ostream& out, Table const& t) const
+  {
+    (void)(t);
+    out << value.get();
+  }
+
+  std::reference_wrapper<T> value;
+};
+
+template <typename T>
+ref(T&)->ref<T>;
+
 template <typename Lhs, typename Rhs>
 struct EqualsClosure
 {
@@ -57,6 +73,12 @@ struct c
 
   template <auto other_attr>
   auto operator==(c<other_attr> const& rhs)
+  {
+    return EqualsClosure{*this, rhs};
+  }
+
+  template <typename T>
+  auto operator==(ref<T> const& rhs)
   {
     return EqualsClosure{*this, rhs};
   }
