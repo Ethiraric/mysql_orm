@@ -113,7 +113,6 @@ TEST_CASE("[Select] Select with optionals", "[Select]")
       "INSERT INTO `optional_records` (`id`, `i`, `s`) VALUES "
       R"((1, 1, "one"),)"
       R"((2, 2, "two"),)"
-      R"((3, 4, "four"),)"
       R"((3, 4, "four"))");
 
   SECTION("One row")

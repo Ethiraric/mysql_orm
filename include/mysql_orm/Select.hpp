@@ -33,16 +33,16 @@ public:
   template <typename Condition>
   WhereQuery<Select, Table, Condition> operator()(Where<Condition> where)
   {
-    return WhereQuery{*this->mysql_handle,
-                      *this,
-                      this->table.get(),
-                      std::move(where.condition)};
+    return WhereQuery<Select, Table, Condition>{*this->mysql_handle,
+                                                *this,
+                                                this->table.get(),
+                                                std::move(where.condition)};
   }
 
   template <typename Limit>
   LimitQuery<Select, Table, Limit> operator()(Limit limit)
   {
-    return LimitQuery{
+    return LimitQuery<Select, Table, Limit>{
         *this->mysql_handle, *this, this->table.get(), std::move(limit)};
   }
 

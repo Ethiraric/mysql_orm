@@ -7,7 +7,7 @@
 
 #include <mysql/mysql.h>
 
-#include <mysql_orm/Statement.hpp>
+#include <mysql_orm/QueryContinuation.hpp>
 
 namespace mysql_orm
 {
@@ -24,24 +24,21 @@ struct Limit<0>
 };
 
 template <typename Query, typename Table, typename Limit>
-class LimitQuery
+class LimitQueryImpl
 {
 public:
   using model_type = typename Query::model_type;
 
-  LimitQuery(MYSQL& mysql, Query q, Table const& t, Limit&& l) noexcept
-    : mysql_handle{&mysql},
-      query{std::move(q)},
-      table{t},
-      limit{std::move(l)}
+  LimitQueryImpl(MYSQL& mysql, Query q, Table const& t, Limit&& l) noexcept
+    : mysql_handle{&mysql}, query{std::move(q)}, table{t}, limit{std::move(l)}
   {
   }
-  LimitQuery(LimitQuery const& b) noexcept = default;
-  LimitQuery(LimitQuery&& b) noexcept = default;
-  ~LimitQuery() noexcept = default;
+  LimitQueryImpl(LimitQueryImpl const& b) noexcept = default;
+  LimitQueryImpl(LimitQueryImpl&& b) noexcept = default;
+  ~LimitQueryImpl() noexcept = default;
 
-  LimitQuery& operator=(LimitQuery const& rhs) noexcept = default;
-  LimitQuery& operator=(LimitQuery&& rhs) noexcept = default;
+  LimitQueryImpl& operator=(LimitQueryImpl const& rhs) noexcept = default;
+  LimitQueryImpl& operator=(LimitQueryImpl&& rhs) noexcept = default;
 
   std::stringstream buildqueryss() const
   {
@@ -50,43 +47,20 @@ public:
     return ss;
   }
 
-  std::string buildquery() const
-  {
-    return this->buildqueryss().str();
-  }
-
-  Statement<LimitQuery, model_type> build() const
-  {
-    return Statement<LimitQuery, model_type>{*this->mysql_handle, *this};
-  }
-
-  size_t getNbOutputSlots() const noexcept
-  {
-    return this->query.getNbOutputSlots();
-  }
-
-  void bindOutTo(model_type& model, std::vector<MYSQL_BIND>& out_binds) const
-  {
-    this->query.bindOutTo(model, out_binds);
-  }
-
-  void finalizeBindings(model_type& model,
-                        std::vector<MYSQL_BIND>& binds,
-                        std::vector<unsigned long>& lengths,
-                        std::vector<my_bool>& are_null,
-                        std::vector<my_bool>& errors)
-  {
-    this->query.finalizeBindings(model, binds, lengths, are_null, errors);
-  }
-
-private:
+protected:
   // May not be nullptr. Can't use std::reference_wrapper since MYSQL is
   // incomplete.
   MYSQL* mysql_handle;
   Query query;
   std::reference_wrapper<Table const> table;
+
+private:
   Limit limit;
 };
+
+template <typename Query, typename Table, typename Limit>
+using LimitQuery =
+    QueryContinuation<Query, Table, LimitQueryImpl<Query, Table, Limit>>;
 }
 
 #endif /* !MYSQL_ORM_LIMIT_HPP_ */

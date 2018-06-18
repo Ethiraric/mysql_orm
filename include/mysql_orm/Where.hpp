@@ -84,24 +84,24 @@ public:
 };
 
 template <typename Query, typename Table, typename Condition>
-class WhereQuery
+class WhereQueryImpl
 {
 public:
   using model_type = typename Query::model_type;
 
-  WhereQuery(MYSQL& mysql, Query q, Table const& t, Condition&& c) noexcept
+  WhereQueryImpl(MYSQL& mysql, Query q, Table const& t, Condition&& c) noexcept
     : mysql_handle{&mysql},
       query{std::move(q)},
       table{t},
       condition{std::move(c)}
   {
   }
-  WhereQuery(WhereQuery const& b) noexcept = default;
-  WhereQuery(WhereQuery&& b) noexcept = default;
-  ~WhereQuery() noexcept = default;
+  WhereQueryImpl(WhereQueryImpl const& b) noexcept = default;
+  WhereQueryImpl(WhereQueryImpl&& b) noexcept = default;
+  ~WhereQueryImpl() noexcept = default;
 
-  WhereQuery& operator=(WhereQuery const& rhs) noexcept = default;
-  WhereQuery& operator=(WhereQuery&& rhs) noexcept = default;
+  WhereQueryImpl& operator=(WhereQueryImpl const& rhs) noexcept = default;
+  WhereQueryImpl& operator=(WhereQueryImpl&& rhs) noexcept = default;
 
   std::stringstream buildqueryss() const
   {
@@ -111,54 +111,27 @@ public:
     return ss;
   }
 
-  std::string buildquery() const
-  {
-    return this->buildqueryss().str();
-  }
-
-  Statement<WhereQuery, model_type> build() const
-  {
-    return Statement<WhereQuery, model_type>{*this->mysql_handle, *this};
-  }
-
   template <typename Limit>
-  LimitQuery<WhereQuery, Table, Limit> operator()(Limit limit)
+  LimitQuery<WhereQueryImpl, Table, Limit> operator()(Limit limit)
   {
-    return LimitQuery{
+    return LimitQuery<WhereQueryImpl, Table, Limit>{
         *this->mysql_handle, *this, this->table.get(), std::move(limit)};
   }
 
-  size_t getNbOutputSlots() const noexcept
-  {
-    return this->query.getNbOutputSlots();
-  }
-
-  void bindOutTo(model_type& model, std::vector<MYSQL_BIND>& out_binds) const
-  {
-    this->query.bindOutTo(model, out_binds);
-  }
-
-  void finalizeBindings(model_type& model,
-                        std::vector<MYSQL_BIND>& binds,
-                        std::vector<unsigned long>& lengths,
-                        std::vector<my_bool>& are_null,
-                        std::vector<my_bool>& errors)
-  {
-    this->query.finalizeBindings(model, binds, lengths, are_null, errors);
-  }
-
-
-private:
+protected:
   // May not be nullptr. Can't use std::reference_wrapper since MYSQL is
   // incomplete.
   MYSQL* mysql_handle;
   Query query;
   std::reference_wrapper<Table const> table;
+
+private:
   Condition condition;
 };
 
 template <typename Query, typename Table, typename Condition>
-WhereQuery(Query, Table, Condition)->WhereQuery<Query, Table, Condition>;
+using WhereQuery =
+    QueryContinuation<Query, Table, WhereQueryImpl<Query, Table, Condition>>;
 }
 
 #endif /* !MYSQL_ORM_WHERE_HPP_ */
