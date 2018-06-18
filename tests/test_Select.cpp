@@ -15,7 +15,7 @@ using mysql_orm::MySQLException;
 using mysql_orm::ref;
 using mysql_orm::Where;
 
-TEST_CASE("[Select] Select statement", "[Select]")
+TEST_CASE("[Select] Select buildquery", "[Select]")
 {
   auto table_mixed_records = make_table("mixed_records",
                                         make_column<&MixedRecord::id>("id"),
@@ -34,11 +34,8 @@ TEST_CASE("[Select] Select statement", "[Select]")
                          table_mixed_records,
                          table_records);
 
-  SECTION("Select")
-  {
-    CHECK(d.select<MixedRecord>().buildquery() ==
-          "SELECT `id`, `i`, `foo` FROM `mixed_records`");
-  }
+  CHECK(d.select<MixedRecord>().buildquery() ==
+        "SELECT `id`, `i`, `foo` FROM `mixed_records`");
 }
 
 TEST_CASE("[Select] Select", "[Select]")
@@ -82,19 +79,6 @@ TEST_CASE("[Select] Select", "[Select]")
     CHECK(res[1] == Record{2, 2, "two"});
     CHECK(res[2] == Record{3, 4, "four"});
   }
-
-  SECTION("Where query")
-  {
-    auto const res =
-        d.select<Record>()(mysql_orm::Where{mysql_orm::c<&Record::i>{} == 4})
-            .build()
-            .execute();
-    static_assert(
-        std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
-        "Wrong return type");
-    REQUIRE(res.size() == 1);
-    CHECK(res[0] == Record{3, 4, "four"});
-  }
 }
 
 TEST_CASE("[Select] Select with optionals", "[Select]")
@@ -137,78 +121,5 @@ TEST_CASE("[Select] Select with optionals", "[Select]")
     CHECK(res[0] == RecordWithOptionals{1, 1, "one"});
     CHECK(res[1] == RecordWithOptionals{2, 2, "two"});
     CHECK(res[2] == RecordWithOptionals{3, 4, "four"});
-  }
-
-  SECTION("Where query")
-  {
-    SECTION("With Value")
-    {
-      auto const res =
-          d.select<RecordWithOptionals>()(
-               mysql_orm::Where{mysql_orm::c<&RecordWithOptionals::i>{} == 4})
-              .build()
-              .execute();
-      static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
-                                   std::vector<RecordWithOptionals>>,
-                    "Wrong return type");
-      REQUIRE(res.size() == 1);
-      CHECK(res[0] == RecordWithOptionals{3, 4, "four"});
-    }
-
-    SECTION("With variable")
-    {
-      auto const i = 4;
-      auto const res =
-          d.select<RecordWithOptionals>()(
-               mysql_orm::Where{mysql_orm::c<&RecordWithOptionals::i>{} == i})
-              .build()
-              .execute();
-      static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
-                                   std::vector<RecordWithOptionals>>,
-                    "Wrong return type");
-      REQUIRE(res.size() == 1);
-      CHECK(res[0] == RecordWithOptionals{3, 4, "four"});
-    }
-
-    SECTION("With reference")
-    {
-      auto i = 3;
-      auto const query = d.select<RecordWithOptionals>()(
-          mysql_orm::Where{mysql_orm::c<&RecordWithOptionals::i>{} == ref{i}});
-      i = 4;
-      auto const res = query.build().execute();
-      static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
-                                   std::vector<RecordWithOptionals>>,
-                    "Wrong return type");
-      REQUIRE(res.size() == 1);
-      CHECK(res[0] == RecordWithOptionals{3, 4, "four"});
-    }
-  }
-
-  SECTION("Limit query")
-  {
-    SECTION("Templated")
-    {
-      auto const res =
-          d.select<RecordWithOptionals>()(Limit<2>{}).build().execute();
-      static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
-                                   std::vector<RecordWithOptionals>>,
-                    "Wrong return type");
-      REQUIRE(res.size() == 2);
-      CHECK(res[0] == RecordWithOptionals{1, 1, "one"});
-      CHECK(res[1] == RecordWithOptionals{2, 2, "two"});
-    }
-
-    SECTION("With variable")
-    {
-      auto const i = size_t{1};
-      auto const res =
-          d.select<RecordWithOptionals>()(Limit<>{i}).build().execute();
-      static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
-                                   std::vector<RecordWithOptionals>>,
-                    "Wrong return type");
-      REQUIRE(res.size() == 1);
-      CHECK(res[0] == RecordWithOptionals{1, 1, "one"});
-    }
   }
 }

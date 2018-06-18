@@ -15,8 +15,10 @@ set(SRCS
   test_Column.cpp
   test_ColumnTags.cpp
   test_Database.cpp
+  test_Limit.cpp
   test_Select.cpp
   test_Table.cpp
+  test_Where.cpp
 )
 
 #binary
