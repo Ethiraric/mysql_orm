@@ -12,7 +12,9 @@ enum class OperatorType
   GreaterThan,
   GreaterOrEquals,
   LessThan,
-  LessOrEquals
+  LessOrEquals,
+  And,
+  Or
 };
 
 template <OperatorType type>
@@ -30,6 +32,10 @@ constexpr auto operatorTypeToString()
     return "<";
   else if constexpr (type == OperatorType::LessOrEquals)
     return "<=";
+  else if constexpr (type == OperatorType::And)
+    return " AND ";
+  else if constexpr (type == OperatorType::Or)
+    return " OR ";
 }
 
 template <typename T>
@@ -64,8 +70,6 @@ ref(T&)->ref<T>;
 template <typename Lhs, typename Rhs, OperatorType type>
 struct OperatorClosure
 {
-  using compare_tag = int;
-
   template <typename Table>
   void appendToQuery(std::ostream& out, Table const& t) const
   {
@@ -73,6 +77,18 @@ struct OperatorClosure
     out << operatorTypeToString<type>();
     this->rhs.appendToQuery(out, t);
   }
+
+#define MAKE_OPERATORS(op, optype)                                            \
+  template <typename oLhs, typename oRhs, OperatorType otype>                 \
+  auto operator op(OperatorClosure<oLhs, oRhs, otype>&& rhs_cond) const       \
+  {                                                                           \
+    return OperatorClosure<OperatorClosure<Lhs, Rhs, type>,                   \
+                           OperatorClosure<oLhs, oRhs, otype>,                \
+                           OperatorType::optype>{*this, std::move(rhs_cond)}; \
+  }
+  MAKE_OPERATORS(&&, And)
+  MAKE_OPERATORS(||, Or)
+#undef MAKE_OPERATORS
 
   Lhs lhs;
   Rhs rhs;
@@ -109,12 +125,12 @@ struct c
     return OperatorClosure<c, decltype(rhs), OperatorType::type>{*this, rhs}; \
   }
 
-  MAKE_OPERATORS(==, Equals);
-  MAKE_OPERATORS(!=, NotEquals);
-  MAKE_OPERATORS(>, GreaterThan);
-  MAKE_OPERATORS(>=, GreaterOrEquals);
-  MAKE_OPERATORS(<, LessThan);
-  MAKE_OPERATORS(<=, LessOrEquals);
+  MAKE_OPERATORS(==, Equals)
+  MAKE_OPERATORS(!=, NotEquals)
+  MAKE_OPERATORS(>, GreaterThan)
+  MAKE_OPERATORS(>=, GreaterOrEquals)
+  MAKE_OPERATORS(<, LessThan)
+  MAKE_OPERATORS(<=, LessOrEquals)
 #undef MAKE_OPERATORS
 };
 }
