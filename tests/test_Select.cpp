@@ -154,13 +154,28 @@ TEST_CASE("[Select] Select with optionals", "[Select]")
 
   SECTION("Limit query")
   {
-    auto const res =
-        d.select<RecordWithOptionals>()(Limit<2>{}).build().execute();
-    static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
-                                 std::vector<RecordWithOptionals>>,
-                  "Wrong return type");
-    REQUIRE(res.size() == 2);
-    CHECK(res[0] == RecordWithOptionals{1, 1, "one"});
-    CHECK(res[1] == RecordWithOptionals{2, 2, "two"});
+    SECTION("Templated")
+    {
+      auto const res =
+          d.select<RecordWithOptionals>()(Limit<2>{}).build().execute();
+      static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
+                                   std::vector<RecordWithOptionals>>,
+                    "Wrong return type");
+      REQUIRE(res.size() == 2);
+      CHECK(res[0] == RecordWithOptionals{1, 1, "one"});
+      CHECK(res[1] == RecordWithOptionals{2, 2, "two"});
+    }
+
+    SECTION("With variable")
+    {
+      auto const i = size_t{1};
+      auto const res =
+          d.select<RecordWithOptionals>()(Limit<>{i}).build().execute();
+      static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
+                                   std::vector<RecordWithOptionals>>,
+                    "Wrong return type");
+      REQUIRE(res.size() == 1);
+      CHECK(res[0] == RecordWithOptionals{1, 1, "one"});
+    }
   }
 }
