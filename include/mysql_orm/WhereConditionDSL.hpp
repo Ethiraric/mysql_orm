@@ -151,22 +151,29 @@ struct c
 
 #define MAKE_OPERATORS(op, type)                                              \
   template <typename T>                                                       \
-  auto operator op(T const& rhs)                                              \
+  auto operator op(T const& rhs) const                                        \
   {                                                                           \
     return OperatorClosure<c, OperandWrapper<T>, OperatorType::type>{         \
         *this, OperandWrapper<T>{rhs}};                                       \
   }                                                                           \
                                                                               \
+  template <typename T, size_t N>                                             \
+  auto operator op(T const(&rhs)[N]) const                                    \
+  {                                                                           \
+    return OperatorClosure<c, OperandWrapper<T const*>, OperatorType::type>{  \
+        *this, OperandWrapper<T const*>{rhs}};                                \
+  }                                                                           \
+                                                                              \
   template <auto other_attr>                                                  \
-  auto operator op(c<other_attr> const& rhs)                                  \
+  auto operator op(c<other_attr> const& rhs) const                            \
   {                                                                           \
     return OperatorClosure<c, decltype(rhs), OperatorType::type>{*this, rhs}; \
   }                                                                           \
                                                                               \
   template <typename T>                                                       \
-  auto operator op(ref<T> const& rhs)                                         \
+  auto operator op(ref<T> const& rhs) const                                   \
   {                                                                           \
-    return OperatorClosure<c, decltype(rhs), OperatorType::type>{*this, rhs}; \
+    return OperatorClosure<c, ref<T>, OperatorType::type>{*this, rhs};        \
   }
 
   MAKE_OPERATORS(==, Equals)

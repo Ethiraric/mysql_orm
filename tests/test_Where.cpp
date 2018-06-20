@@ -108,4 +108,17 @@ TEST_CASE("[Where] Simple Where", "[Where]")
     REQUIRE(res.size() == 1);
     CHECK(res[0] == Record{4, 1, "one"});
 }
+
+  SECTION("Raw char const* string")
+  {
+    auto const res =
+        d.select<Record>()(Where{c<&Record::s>{} == "one"})
+            .build()
+            .execute();
+    static_assert(
+        std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
+        "Wrong return type");
+    REQUIRE(res.size() == 1);
+    CHECK(res[0] == Record{1, 1, "one"});
+}
 }

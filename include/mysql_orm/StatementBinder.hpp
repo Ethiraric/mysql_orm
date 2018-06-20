@@ -114,6 +114,7 @@ struct StatementInBinder
     auto& bind = *pbind;
     static_assert(std::is_same_v<column_data_t, std::string> ||
                       std::is_same_v<column_data_t, char*> ||
+                      std::is_same_v<column_data_t, char const*> ||
                       std::is_integral_v<column_data_t>,
                   "Unknown type");
     if constexpr (std::is_same_v<column_data_t, std::string>)
@@ -122,10 +123,11 @@ struct StatementInBinder
       bind.buffer = const_cast<char*>(value.data());
       bind.buffer_length = value.size();
     }
-    else if constexpr (std::is_same_v<column_data_t, char*>)
+    else if constexpr (std::is_same_v<column_data_t, char*> ||
+                       std::is_same_v<column_data_t, char const*>)
     {
       bind.buffer_type = MYSQL_TYPE_STRING;
-      bind.buffer = value;
+      bind.buffer = const_cast<char*>(value);
       bind.buffer_length = strlen(value);
     }
     else if constexpr (std::is_integral_v<column_data_t>)
