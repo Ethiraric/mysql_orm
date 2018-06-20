@@ -80,7 +80,7 @@ TEST_CASE("Where clause", "[Table]")
       CHECK(t.select(dangling_ref<MYSQL>())(Where{c<&MixedRecord::id>{} == 1})
                 .buildquery() ==
             "SELECT `id`, `i`, `foo` "
-            "FROM `record` WHERE `id`=1");
+            "FROM `record` WHERE `id`=?");
     }
   }
 }

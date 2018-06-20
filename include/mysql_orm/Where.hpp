@@ -62,6 +62,18 @@ public:
         *this->mysql_handle, *this, this->table.get(), std::move(limit)};
   }
 
+  size_t getNbInputSlots() const noexcept
+  {
+    return this->query.getNbInputSlots() + this->condition.getNbInputSlots();
+  }
+
+  void bindInTo(MYSQL_BIND* bindarray) const noexcept
+  {
+    auto* firstbind = bindarray + this->query.getNbInputSlots();
+    this->condition.bindInTo(firstbind);
+    this->query.bindInTo(bindarray);
+  }
+
 protected:
   // May not be nullptr. Can't use std::reference_wrapper since MYSQL is
   // incomplete.

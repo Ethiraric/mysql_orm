@@ -17,33 +17,37 @@ template <typename Query, typename Model>
 class Statement
 {
 public:
-  Statement(MYSQL& mysql, Query const& query)
+  Statement(MYSQL& mysql, Query pquery)
     : mysql_handle{&mysql},
-      orm_query{query},
-      sql_query{query.buildquery()},
-      out_binds(query.getNbOutputSlots()),
-      out_lengths(query.getNbOutputSlots()),
-      out_is_null(query.getNbOutputSlots()),
-      out_error(query.getNbOutputSlots()),
+      orm_query{std::move(pquery)},
+      sql_query{this->orm_query.buildquery()},
+      in_binds{this->orm_query.getNbInputSlots()},
+      out_binds(this->orm_query.getNbOutputSlots()),
+      out_lengths(this->orm_query.getNbOutputSlots()),
+      out_is_null(this->orm_query.getNbOutputSlots()),
+      out_error(this->orm_query.getNbOutputSlots()),
       stmt{nullptr, &mysql_stmt_close}
   {
     this->stmt.reset(mysql_stmt_init(this->mysql_handle));
     if (!this->stmt)
       throw MySQLException("Failed to create statement: " +
                            std::string{mysql_error(this->mysql_handle)});
-    if (mysql_stmt_prepare(this->stmt.get(), this->sql_query.c_str(), this->sql_query.size()))
+    if (mysql_stmt_prepare(
+            this->stmt.get(), this->sql_query.c_str(), this->sql_query.size()))
       throw MySQLException("Failed to prepare statement: " +
                            std::string{mysql_error(this->mysql_handle)});
-    std::memset(this->out_binds.data(),
-                0,
-                query.getNbOutputSlots() * sizeof(MYSQL_BIND));
-    for (auto i = 0u; i < query.getNbOutputSlots(); ++i)
+    std::memset(
+        this->out_binds.data(), 0, this->out_binds.size() * sizeof(MYSQL_BIND));
+    std::memset(
+        this->in_binds.data(), 0, this->in_binds.size() * sizeof(MYSQL_BIND));
+    for (auto i = 0u; i < this->orm_query.getNbOutputSlots(); ++i)
     {
       this->out_binds[i].length = &this->out_lengths[i];
       this->out_binds[i].is_null = &this->out_is_null[i];
       this->out_binds[i].error = &this->out_error[i];
     }
-    this->bindOutToQuery(query);
+    this->bindOutToQuery();
+    this->bindInToQuery();
   }
 
   Statement(Statement const& b) = delete;
@@ -53,9 +57,14 @@ public:
   Statement& operator=(Statement const& rhs) = delete;
   Statement& operator=(Statement&& rhs) noexcept = default;
 
-  void bindOutToQuery(Query const& query)
+  void bindInToQuery() noexcept
   {
-    query.bindOutTo(this->temp, this->out_binds);
+    this->orm_query.bindInTo(&this->in_binds[0]);
+  }
+
+  void bindOutToQuery()
+  {
+    this->orm_query.bindOutTo(this->temp, this->out_binds);
   }
 
   auto execute()
@@ -81,8 +90,10 @@ public:
 private:
   void sql_execute()
   {
-    if (!this->out_binds.empty() &&
-        mysql_stmt_bind_result(this->stmt.get(), this->out_binds.data()))
+    if ((!this->out_binds.empty() &&
+         mysql_stmt_bind_result(this->stmt.get(), this->out_binds.data())) ||
+        (!this->in_binds.empty() &&
+         mysql_stmt_bind_param(this->stmt.get(), this->in_binds.data())))
       throw MySQLException("Failed to bind statement: " +
                            std::string{mysql_stmt_error(this->stmt.get())});
     if (mysql_stmt_execute(this->stmt.get()))
@@ -94,6 +105,7 @@ private:
   Model temp;
   Query orm_query;
   std::string sql_query;
+  std::vector<MYSQL_BIND> in_binds;
   std::vector<MYSQL_BIND> out_binds;
   std::vector<unsigned long> out_lengths;
   std::vector<my_bool> out_is_null;

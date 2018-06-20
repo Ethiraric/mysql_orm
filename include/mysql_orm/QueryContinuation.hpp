@@ -36,14 +36,24 @@ public:
     return this->buildqueryss().str();
   }
 
+  size_t getNbInputSlots() const noexcept
+  {
+    return this->getNbInputSlotsImpl(*this, 0);
+  }
+
   size_t getNbOutputSlots() const noexcept
   {
     return this->query.getNbOutputSlots();
   }
 
-  void bindOutTo(model_type& model, std::vector<MYSQL_BIND>& out_binds) const
+  void bindInTo(MYSQL_BIND* bindarray) const noexcept
   {
-    this->query.bindOutTo(model, out_binds);
+    this->bindInToImpl(*this, bindarray, 0);
+  }
+
+  void bindOutTo(model_type& model, std::vector<MYSQL_BIND>& bindarray) const
+  {
+    this->query.bindOutTo(model, bindarray);
   }
 
   void finalizeBindings(model_type& model,
@@ -58,6 +68,35 @@ public:
   Statement<QueryContinuation, model_type> build() const
   {
     return Statement<QueryContinuation, model_type>{*this->mysql_handle, *this};
+  }
+
+private:
+  template <typename Q>
+  static auto getNbInputSlotsImpl(Q const& q, int) noexcept
+      -> decltype(q.Continuation::getNbInputSlots(), size_t())
+  {
+    return q.Continuation::getNbInputSlots();
+  }
+  template <typename Q>
+  static size_t getNbInputSlotsImpl(Q const& q, long) noexcept
+  {
+    return q.query.getNbInputSlots();
+  }
+
+  template <typename Q>
+  static auto bindInToImpl(Q const& q,
+                           MYSQL_BIND* bindarray,
+                           int) noexcept
+      -> decltype(q.Continuation::bindInTo(bindarray), void())
+  {
+    q.Continuation::bindInTo(bindarray);
+  }
+  template <typename Q>
+  static void bindInToImpl(Q const& q,
+                           MYSQL_BIND* bindarray,
+                           long) noexcept
+  {
+    q.query.bindInTo(bindarray);
   }
 };
 

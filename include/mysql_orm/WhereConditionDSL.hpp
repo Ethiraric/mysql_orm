@@ -3,6 +3,10 @@
 
 #include <ostream>
 
+#include <mysql/mysql.h>
+
+#include <mysql_orm/StatementBinder.hpp>
+
 namespace mysql_orm
 {
 enum class OperatorType
@@ -45,7 +49,17 @@ struct OperandWrapper
   void appendToQuery(std::ostream& out, Table const& t) const
   {
     (void)(t);
-    out << value;
+    out << '?';
+  }
+
+  size_t getNbInputSlots() const noexcept
+  {
+    return 1;
+  }
+
+  void bindInTo(MYSQL_BIND* bindarray) const noexcept
+  {
+    StatementInBinder<T>::bind(this->value, bindarray);
   }
 
   T value;
@@ -58,7 +72,17 @@ struct ref
   void appendToQuery(std::ostream& out, Table const& t) const
   {
     (void)(t);
-    out << value.get();
+    out << '?';
+  }
+
+  size_t getNbInputSlots() const noexcept
+  {
+    return 1;
+  }
+
+  void bindInTo(MYSQL_BIND* bindarray) const noexcept
+  {
+    StatementInBinder<T>::bind(this->value.get(), bindarray);
   }
 
   std::reference_wrapper<T> value;
@@ -76,6 +100,17 @@ struct OperatorClosure
     this->lhs.appendToQuery(out, t);
     out << operatorTypeToString<type>();
     this->rhs.appendToQuery(out, t);
+  }
+
+  size_t getNbInputSlots() const noexcept
+  {
+    return this->lhs.getNbInputSlots() + this->rhs.getNbInputSlots();
+  }
+
+  void bindInTo(MYSQL_BIND* bindarray) const noexcept
+  {
+    this->lhs.bindInTo(bindarray);
+    this->rhs.bindInTo(bindarray + this->lhs.getNbInputSlots());
   }
 
 #define MAKE_OPERATORS(op, optype)                                            \
@@ -103,6 +138,15 @@ struct c
   void appendToQuery(std::ostream& out, Table const& t) const
   {
     out << '`' << t.template getColumn<attr>().getName() << '`';
+  }
+
+  size_t getNbInputSlots() const noexcept
+  {
+    return 0;
+  }
+
+  void bindInTo(MYSQL_BIND*) const noexcept
+  {
   }
 
 #define MAKE_OPERATORS(op, type)                                              \

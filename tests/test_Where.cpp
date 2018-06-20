@@ -25,7 +25,7 @@ TEST_CASE("[Where] Where buildquery", "[Where]")
                          table_records);
 
   CHECK(d.select<Record>()(Where{c<&Record::i>{} == 3}).buildquery() ==
-        "SELECT `id`, `i`, `s` FROM `records` WHERE `i`=3");
+        "SELECT `id`, `i`, `s` FROM `records` WHERE `i`=?");
   SECTION("Where query")
   {
     auto const res =

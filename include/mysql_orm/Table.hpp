@@ -107,9 +107,10 @@ public:
 
   static void bindAll(model_type& model, std::vector<MYSQL_BIND>& out_binds)
   {
-    StatementBinder<model_type,
-                    meta::MapValue_v<meta::ColumnAttributeGetter,
-                                     Columns>...>::bind(model, &out_binds[0]);
+    StatementOutBinder<model_type,
+                       meta::MapValue_v<meta::ColumnAttributeGetter,
+                                        Columns>...>::bind(model,
+                                                           &out_binds[0]);
   }
 
   static void finalizeAll(model_type& model,

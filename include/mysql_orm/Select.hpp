@@ -61,6 +61,11 @@ public:
     return Statement<Select, model_type>{*this->mysql_handle, *this};
   }
 
+  size_t getNbInputSlots() const noexcept
+  {
+    return 0;
+  }
+
   size_t getNbOutputSlots() const noexcept
   {
     return sizeof...(Attrs) > 0 ? sizeof...(Attrs) : this->table.get().getNbColumns();
@@ -69,9 +74,13 @@ public:
   void bindOutTo(model_type& model, std::vector<MYSQL_BIND>& out_binds) const
   {
     if constexpr (sizeof...(Attrs) > 0)
-      StatementBinder<model_type, Attrs...>::bind(model, &out_binds[0]);
+      StatementOutBinder<model_type, Attrs...>::bind(model, &out_binds[0]);
     else
       Table::bindAll(model, out_binds);
+  }
+
+  void bindInTo(MYSQL_BIND*) const noexcept
+  {
   }
 
   void finalizeBindings(model_type& model,

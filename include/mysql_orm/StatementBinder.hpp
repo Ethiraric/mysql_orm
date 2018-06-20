@@ -15,8 +15,21 @@ namespace mysql_orm
 {
 namespace details
 {
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr enum_field_types getMySQLIntegralFieldType()
+{
+  if constexpr (sizeof(T) == 1)
+    return MYSQL_TYPE_TINY;
+  else if constexpr (sizeof(T) == 2)
+    return MYSQL_TYPE_SHORT;
+  else if constexpr (sizeof(T) == 4)
+    return MYSQL_TYPE_LONG;
+  else if constexpr (sizeof(T) == 8)
+    return MYSQL_TYPE_LONGLONG;
+}
+
 template <typename Model, auto Attr>
-struct SingleStatementBinder
+struct SingleStatementOutBinder
 {
   using attribute_t =
       typename meta::AttributePtrDissector<decltype(Attr)>::attribute_t;
@@ -38,7 +51,8 @@ struct SingleStatementBinder
       }
       else
         return field;
-    }();
+    }
+    ();
     static_assert(std::is_same_v<column_data_t, std::string> ||
                       std::is_same_v<column_data_t, char*> ||
                       std::is_integral_v<column_data_t>,
@@ -61,43 +75,66 @@ struct SingleStatementBinder
     }
     else if constexpr (std::is_integral_v<column_data_t>)
     {
-      static_assert(!std::is_integral_v<column_data_t> ||
-                        (std::is_integral_v<column_data_t> &&
-                         (sizeof(attr) == 1 || sizeof(attr) == 2 ||
-                          sizeof(attr) == 4 || sizeof(attr == 8))),
-                    "Unknown integer type");
       mysql_bind.is_unsigned = std::is_unsigned_v<column_data_t>;
+      mysql_bind.buffer_type = getMySQLIntegralFieldType<column_data_t>();
       mysql_bind.buffer = &attr;
       mysql_bind.buffer_length = sizeof(attr);
-      if constexpr (sizeof(attr) == 1)
-        mysql_bind.buffer_type = MYSQL_TYPE_TINY;
-      else if constexpr (sizeof(attr) == 2)
-        mysql_bind.buffer_type = MYSQL_TYPE_SHORT;
-      else if constexpr (sizeof(attr) == 4)
-        mysql_bind.buffer_type = MYSQL_TYPE_LONG;
-      else if constexpr (sizeof(attr) == 8)
-        mysql_bind.buffer_type = MYSQL_TYPE_LONGLONG;
     }
   }
 };
 }
 
 template <typename Model, auto Attr, auto... Attrs>
-struct StatementBinder
+struct StatementOutBinder
 {
   static void bind(Model& model, MYSQL_BIND* bindarray)
   {
-    details::SingleStatementBinder<Model, Attr>::bind(model, bindarray[0]);
-    StatementBinder<Model, Attrs...>::bind(model, bindarray + 1);
+    details::SingleStatementOutBinder<Model, Attr>::bind(model, bindarray[0]);
+    StatementOutBinder<Model, Attrs...>::bind(model, bindarray + 1);
   }
 };
 
 template <typename Model, auto Attr>
-struct StatementBinder<Model, Attr>
+struct StatementOutBinder<Model, Attr>
 {
   static void bind(Model& model, MYSQL_BIND* bindarray)
   {
-    details::SingleStatementBinder<Model, Attr>::bind(model, bindarray[0]);
+    details::SingleStatementOutBinder<Model, Attr>::bind(model, bindarray[0]);
+  }
+};
+
+template <typename T>
+struct StatementInBinder
+{
+  static inline constexpr auto is_optional = meta::IsOptional_v<T>;
+  using column_data_t =
+      std::conditional_t<is_optional, meta::LiftOptional_t<T>, T>;
+  static void bind(T const& value, MYSQL_BIND* pbind) noexcept
+  {
+    auto& bind = *pbind;
+    static_assert(std::is_same_v<column_data_t, std::string> ||
+                      std::is_same_v<column_data_t, char*> ||
+                      std::is_integral_v<column_data_t>,
+                  "Unknown type");
+    if constexpr (std::is_same_v<column_data_t, std::string>)
+    {
+      bind.buffer_type = MYSQL_TYPE_STRING;
+      bind.buffer = const_cast<char*>(value.data());
+      bind.buffer_length = value.size();
+    }
+    else if constexpr (std::is_same_v<column_data_t, char*>)
+    {
+      bind.buffer_type = MYSQL_TYPE_STRING;
+      bind.buffer = value;
+      bind.buffer_length = strlen(value);
+    }
+    else if constexpr (std::is_integral_v<column_data_t>)
+    {
+      bind.is_unsigned = std::is_unsigned_v<column_data_t>;
+      bind.buffer_type = details::getMySQLIntegralFieldType<column_data_t>();
+      bind.buffer = const_cast<column_data_t*>(&value);
+      bind.buffer_length = sizeof(value);
+    }
   }
 };
 }
