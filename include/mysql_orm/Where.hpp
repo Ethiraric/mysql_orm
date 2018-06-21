@@ -32,6 +32,7 @@ class WhereQueryImpl
 {
 public:
   using model_type = typename Query::model_type;
+  static inline constexpr auto is_select_query{Query::is_select_query};
 
   WhereQueryImpl(MYSQL& mysql, Query q, Table const& t, Condition&& c) noexcept
     : mysql_handle{&mysql},

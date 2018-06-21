@@ -18,6 +18,7 @@ set(SRCS
   test_Limit.cpp
   test_Select.cpp
   test_Table.cpp
+  test_Update.cpp
   test_Where.cpp
 )
 

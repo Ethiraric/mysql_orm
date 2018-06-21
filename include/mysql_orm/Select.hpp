@@ -19,6 +19,7 @@ class Select
 {
 public:
   using model_type = typename Table::model_type;
+  static inline constexpr auto is_select_query{true};
 
   Select(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{t}
   {

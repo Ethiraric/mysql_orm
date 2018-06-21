@@ -8,6 +8,7 @@
 
 #include <mysql_orm/Exception.hh>
 #include <mysql_orm/Table.hpp>
+#include <mysql_orm/Update.hpp>
 #include <mysql_orm/meta/AllSame.hpp>
 #include <mysql_orm/meta/AttributePtrDissector.hpp>
 #include <mysql_orm/meta/FindMapped.hpp>
@@ -84,6 +85,17 @@ public:
                   "Failed to find table for model");
     return std::get<Table_t>(this->tables)
         .template select<Attr, Attrs...>(*this->handle);
+  }
+
+  template <typename Model>
+  auto update()
+  {
+    using Table_t =
+        typename meta::FindMapped<TableModelGetter, Model, Tables...>::type;
+    static_assert(!std::is_same_v<Table_t, void>,
+                  "Failed to find table for model");
+    return Update<std::remove_reference_t<Table_t>>{
+        *this->handle, std::get<Table_t>(this->tables)};
   }
 
   void recreate()

@@ -42,6 +42,79 @@ constexpr auto operatorTypeToString()
     return " OR ";
 }
 
+template <typename Lhs, typename Rhs>
+struct Assignment;
+
+template <typename Head, typename Tail>
+struct AssignmentList
+{
+  template <typename Lhs, typename Rhs>
+  auto operator,(Assignment<Lhs, Rhs> assignment)
+  {
+    return AssignmentList{std::move(assignment), *this};
+  }
+
+  template <typename Table>
+  void appendToQuery(std::ostream& out, Table const& t) const
+  {
+    this->head.appendToQuery(out, t);
+    out << ',' << ' ';
+    this->tail.appendToQuery(out, t);
+  }
+
+  size_t getNbInputSlots() const noexcept
+  {
+    return this->head.getNbInputSlots() + this->tail.getNbInputSlots();
+  }
+
+  void bindInTo(MYSQL_BIND* bindarray) const noexcept
+  {
+    this->head.bindInTo(bindarray);
+    this->tail.bindInTo(bindarray + head.getNbInputSlots());
+  }
+
+  Head head;
+  Tail tail;
+};
+
+template <typename Head, typename Tail>
+AssignmentList(Head, Tail)->AssignmentList<Head, Tail>;
+
+template <typename Lhs, typename Rhs>
+struct Assignment
+{
+  template <typename OLhs, typename ORhs>
+  auto operator,(Assignment<OLhs, ORhs> other_assignment)
+  {
+    return AssignmentList{std::move(other_assignment), *this};
+  }
+
+  template <typename Table>
+  void appendToQuery(std::ostream& out, Table const& t) const
+  {
+    this->lhs.appendToQuery(out, t);
+    out << '=';
+    this->rhs.appendToQuery(out, t);
+  }
+
+  size_t getNbInputSlots() const noexcept
+  {
+    return this->lhs.getNbInputSlots() + this->rhs.getNbInputSlots();
+  }
+
+  void bindInTo(MYSQL_BIND* bindarray) const noexcept
+  {
+    this->lhs.bindInTo(bindarray);
+    this->rhs.bindInTo(bindarray + this->lhs.getNbInputSlots());
+  }
+
+  Lhs lhs;
+  Rhs rhs;
+};
+
+template <typename Lhs, typename Rhs>
+Assignment(Lhs, Rhs)->Assignment<Lhs, Rhs>;
+
 template <typename T>
 struct OperandWrapper
 {
@@ -147,6 +220,30 @@ struct c
 
   void bindInTo(MYSQL_BIND*) const noexcept
   {
+  }
+
+  template <typename T>
+  auto operator=(T rhs) const
+  {
+    return Assignment{*this, OperandWrapper<T>{std::move(rhs)}};
+  }
+
+  template <typename T, size_t N>
+  auto operator=(T const (&rhs)[N]) const
+  {
+    return Assignment{*this, OperandWrapper<T const&>{rhs}};
+  }
+
+  template <auto other_attr>
+  auto operator=(c<other_attr> rhs) const
+  {
+    return Assignment{*this, rhs};
+  }
+
+  template <typename T>
+  auto operator=(ref<T> rhs) const
+  {
+    return Assignment{*this, std::move(rhs)};
   }
 
 #define MAKE_OPERATORS(op, type)                                              \

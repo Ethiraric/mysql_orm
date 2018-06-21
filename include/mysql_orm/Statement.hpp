@@ -17,15 +17,17 @@ template <typename Query, typename Model>
 class Statement
 {
 public:
+  static inline constexpr auto is_select_query{Query::is_select_query};
+
   Statement(MYSQL& mysql, Query pquery)
     : mysql_handle{&mysql},
       orm_query{std::move(pquery)},
       sql_query{this->orm_query.buildquery()},
       in_binds{this->orm_query.getNbInputSlots()},
-      out_binds(this->orm_query.getNbOutputSlots()),
-      out_lengths(this->orm_query.getNbOutputSlots()),
-      out_is_null(this->orm_query.getNbOutputSlots()),
-      out_error(this->orm_query.getNbOutputSlots()),
+      out_binds(this->getNbOutputSlots()),
+      out_lengths(this->getNbOutputSlots()),
+      out_is_null(this->getNbOutputSlots()),
+      out_error(this->getNbOutputSlots()),
       stmt{nullptr, &mysql_stmt_close}
   {
     this->stmt.reset(mysql_stmt_init(this->mysql_handle));
@@ -38,15 +40,18 @@ public:
                            std::string{mysql_error(this->mysql_handle)});
     std::memset(
         this->out_binds.data(), 0, this->out_binds.size() * sizeof(MYSQL_BIND));
-    std::memset(
-        this->in_binds.data(), 0, this->in_binds.size() * sizeof(MYSQL_BIND));
-    for (auto i = 0u; i < this->orm_query.getNbOutputSlots(); ++i)
+    if constexpr (is_select_query)
     {
-      this->out_binds[i].length = &this->out_lengths[i];
-      this->out_binds[i].is_null = &this->out_is_null[i];
-      this->out_binds[i].error = &this->out_error[i];
+      std::memset(
+          this->in_binds.data(), 0, this->in_binds.size() * sizeof(MYSQL_BIND));
+      for (auto i = 0u; i < this->orm_query.getNbOutputSlots(); ++i)
+      {
+        this->out_binds[i].length = &this->out_lengths[i];
+        this->out_binds[i].is_null = &this->out_is_null[i];
+        this->out_binds[i].error = &this->out_error[i];
+      }
+      this->bindOutToQuery();
     }
-    this->bindOutToQuery();
     this->bindInToQuery();
   }
 
@@ -69,25 +74,38 @@ public:
 
   auto execute()
   {
-    auto ret = std::vector<Model>{};
-    this->sql_execute();
-    auto errcode = 0;
-    while (!(errcode = mysql_stmt_fetch(this->stmt.get())))
+    if constexpr (Query::is_select_query)
     {
-      auto copy = this->temp;
-      this->orm_query.finalizeBindings(copy,
-                                       this->out_binds,
-                                       this->out_lengths,
-                                       this->out_is_null,
-                                       this->out_error);
-      ret.emplace_back(std::move(copy));
+      auto ret = std::vector<Model>{};
+      this->sql_execute();
+      auto errcode = 0;
+      while (!(errcode = mysql_stmt_fetch(this->stmt.get())))
+      {
+        auto copy = this->temp;
+        this->orm_query.finalizeBindings(copy,
+                                         this->out_binds,
+                                         this->out_lengths,
+                                         this->out_is_null,
+                                         this->out_error);
+        ret.emplace_back(std::move(copy));
+      }
+      if (errcode != MYSQL_NO_DATA)
+        throw MySQLException(mysql_stmt_error(this->stmt.get()));
+      return ret;
     }
-    if (errcode != MYSQL_NO_DATA)
-      throw MySQLException(mysql_stmt_error(this->stmt.get()));
-    return ret;
+    else
+      this->sql_execute();
   }
 
 private:
+  size_t getNbOutputSlots() const noexcept
+  {
+    if constexpr (is_select_query)
+      return this->orm_query.getNbOutputSlots();
+    else
+      return 0;
+  }
+
   void sql_execute()
   {
     if ((!this->out_binds.empty() &&
