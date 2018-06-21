@@ -14,24 +14,33 @@ namespace mysql_orm
 using id_t = uint32_t;
 
 template <typename Field>
-char const* getFieldSQLType();
-
-template <>
-inline char const* getFieldSQLType<std::string>()
+constexpr char const* getFieldSQLType()
 {
-  return "TEXT";
-}
-
-template <>
-inline char const* getFieldSQLType<int32_t>()
-{
-  return "INTEGER";
-}
-
-template <>
-inline char const* getFieldSQLType<uint32_t>()
-{
-  return "INTEGER UNSIGNED";
+  if constexpr (std::is_same_v<Field, std::string> ||
+                std::is_same_v<Field, char*> ||
+                std::is_same_v<Field, char const*>)
+    return "TEXT";
+  else if constexpr (std::is_integral_v<Field>)
+  {
+    if constexpr (std::is_same_v<Field, bool>)
+      return "BOOLEAN";
+    else if constexpr (std::is_same_v<Field, int8_t>)
+      return "TINYINT";
+    else if constexpr (std::is_same_v<Field, uint8_t>)
+      return "TINYINT UNSIGNED";
+    else if constexpr (std::is_same_v<Field, int16_t>)
+      return "SMALLINT";
+    else if constexpr (std::is_same_v<Field, uint16_t>)
+      return "SMALLINT UNSIGNED";
+    else if constexpr (std::is_same_v<Field, int32_t>)
+      return "INTEGER";
+    else if constexpr (std::is_same_v<Field, uint32_t>)
+      return "INTEGER UNSIGNED";
+    else if constexpr (std::is_same_v<Field, int64_t>)
+      return "BIGINT";
+    else if constexpr (std::is_same_v<Field, uint64_t>)
+      return "BIGINT UNSIGNED";
+  }
 }
 
 template <typename Model, typename Field, Field Model::*attr>
