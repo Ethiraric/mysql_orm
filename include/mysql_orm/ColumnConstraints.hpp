@@ -1,5 +1,5 @@
-#ifndef MYSQL_ORM_COLUMNTAGS_HPP_
-#define MYSQL_ORM_COLUMNTAGS_HPP_
+#ifndef MYSQL_ORM_COLUMNCONSTRAINTS_HPP_
+#define MYSQL_ORM_COLUMNCONSTRAINTS_HPP_
 
 #include <stdexcept>
 
@@ -18,17 +18,17 @@ enum class Tristate
 
 /** Aggregation of the different column constraints.
  *
- * Each Tag must have overloaded its operator(). Upon construction, ColumnTags
- * will invoke each of its arguments' operator(). Each of them should edit the
- * constraint(s) accordingly.
+ * Each Tag must have overloaded its operator(). Upon construction,
+ * ColumnConstraints will invoke each of its arguments' operator(). Each of
+ * them should edit the constraint(s) accordingly.
  *
  * One can create its own class editing more than one constraints to have a
  * custom behavior.
  */
-struct ColumnTags
+struct ColumnConstraints
 {
   template <typename... TagList>
-  constexpr ColumnTags(TagList... tags)
+  constexpr ColumnConstraints(TagList... tags)
   {
     this->apply(tags...);
   }
@@ -70,8 +70,8 @@ private:
 
 struct Nullable
 {
-  template <typename Tags>
-  constexpr void operator()(Tags& tags)
+  template <typename Constraints>
+  constexpr void operator()(Constraints& tags)
   {
     if (tags.nullable != Tristate::Undefined)
       throw std::runtime_error("Nullable specified multiple times");
@@ -81,8 +81,8 @@ struct Nullable
 
 struct NotNull
 {
-  template <typename Tags>
-  constexpr void operator()(Tags& tags)
+  template <typename Constraints>
+  constexpr void operator()(Constraints& tags)
   {
     if (tags.nullable != Tristate::Undefined)
       throw std::runtime_error("Nullable specified multiple times");
@@ -92,8 +92,8 @@ struct NotNull
 
 struct PrimaryKey
 {
-  template <typename Tags>
-  constexpr void operator()(Tags& tags)
+  template <typename Constraints>
+  constexpr void operator()(Constraints& tags)
   {
     if (tags.primary_key)
       throw std::runtime_error("Primary key specified multiple times");
@@ -103,8 +103,8 @@ struct PrimaryKey
 
 struct Autoincrement
 {
-  template <typename Tags>
-  constexpr void operator()(Tags& tags)
+  template <typename Constraints>
+  constexpr void operator()(Constraints& tags)
   {
     if (tags.auto_increment)
       throw std::runtime_error("Autoincrement specified multiple times");
@@ -113,4 +113,4 @@ struct Autoincrement
 };
 }
 
-#endif /* !MYSQL_ORM_COLUMNTAGS_HPP_ */
+#endif /* !MYSQL_ORM_COLUMNCONSTRAINTS_HPP_ */

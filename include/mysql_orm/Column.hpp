@@ -6,7 +6,7 @@
 #include <optional>
 #include <string>
 
-#include <mysql_orm/ColumnTags.hpp>
+#include <mysql_orm/ColumnConstraints.hpp>
 #include <mysql_orm/meta/AttributePtrDissector.hpp>
 
 namespace mysql_orm
@@ -73,7 +73,7 @@ public:
   using field_type = Field;
   static inline constexpr auto attribute = attr;
 
-  Column(std::string name, ColumnTags t = ColumnTags{}) noexcept
+  Column(std::string name, ColumnConstraints t = ColumnConstraints{}) noexcept
     : column_name{std::move(name)}, tags{t}
   {
     if (this->tags.nullable == Tristate::Undefined)
@@ -106,7 +106,7 @@ public:
 
 private:
   std::string column_name;
-  ColumnTags tags;
+  ColumnConstraints tags;
 };
 
 /** Overload for optional fields.
@@ -121,7 +121,8 @@ public:
   using field_type = Field;
   static inline constexpr auto attribute = attr;
 
-  explicit Column(std::string name, ColumnTags t = ColumnTags{}) noexcept
+  explicit Column(std::string name,
+                  ColumnConstraints t = ColumnConstraints{}) noexcept
     : column_name{std::move(name)}, tags{t}
   {
     if (this->tags.nullable == Tristate::Undefined)
@@ -154,7 +155,7 @@ public:
 
 private:
   std::string const column_name;
-  ColumnTags tags;
+  ColumnConstraints tags;
 };
 
 /** Helper function to create a column.
@@ -171,7 +172,7 @@ auto make_column(std::string name, Tags... tagattributes)
       typename meta::AttributePtrDissector<decltype(AttributePtr)>::class_t;
   using attribute_t =
       typename meta::AttributePtrDissector<decltype(AttributePtr)>::attribute_t;
-  constexpr auto tags = ColumnTags{tagattributes...};
+  constexpr auto tags = ColumnConstraints{tagattributes...};
   return Column<class_t, attribute_t, AttributePtr>{std::move(name), tags};
 }
 }
