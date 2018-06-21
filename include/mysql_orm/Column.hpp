@@ -13,6 +13,10 @@ namespace mysql_orm
 {
 using id_t = uint32_t;
 
+/** Returns a C string with the SQL type of the given field.
+ *
+ * The function errors when the type is unsupported.
+ */
 template <typename Field>
 constexpr char const* getFieldSQLType()
 {
@@ -43,6 +47,24 @@ constexpr char const* getFieldSQLType()
   }
 }
 
+/** A Column in a table.
+ *
+ * The column can be constructed with a name and tags representing the
+ * constraints. Users should not manipulate this class directly.
+ * Fields are not nullable by default.
+ *
+ * We call `Model` the class from which the attribute is from.
+ * We call `Field` the type of the attribute in the class.
+ *
+ * The class defines two member types:
+ *   - `model_type`: Alias to the `Model` template argument.
+ *   - `field_type`: Alias to the `Field` template argument.
+ *
+ * The class defines one static member:
+ *   - `attribute`: Alias to the `attr` template argument (pointer to member).
+ *
+ * TODO(ethiraric): This class might be `constexpr`'d?
+ */
 template <typename Model, typename Field, Field Model::*attr>
 class Column
 {
@@ -64,6 +86,8 @@ public:
   Column& operator=(Column const& rhs) = default;
   Column& operator=(Column&& rhs) noexcept = default;
 
+  /** Returns the part of the create statement associated with the column.
+   */
   std::string getSchema() const
   {
     auto const tagstr = this->tags.toString();
@@ -85,6 +109,10 @@ private:
   ColumnTags tags;
 };
 
+/** Overload for optional fields.
+ *
+ * Fields are nullable by default.
+ */
 template <typename Model, typename Field, std::optional<Field> Model::*attr>
 class Column<Model, std::optional<Field>, attr>
 {
@@ -106,6 +134,8 @@ public:
   Column& operator=(Column const& rhs) = default;
   Column& operator=(Column&& rhs) noexcept = default;
 
+  /** Returns the part of the create statement associated with the column.
+   */
   std::string getSchema() const
   {
     auto const tagstr = this->tags.toString();
@@ -127,6 +157,13 @@ private:
   ColumnTags tags;
 };
 
+/** Helper function to create a column.
+ *
+ * Used as `make_column<&Model::Field>("column_name", Autoincrement{},
+ * NotNull{})`.
+ * The return value is left opaque to the user and should at best be stored in
+ * a type-deduced value (`auto`).
+ */
 template <auto AttributePtr, typename... Tags>
 auto make_column(std::string name, Tags... tagattributes)
 {
