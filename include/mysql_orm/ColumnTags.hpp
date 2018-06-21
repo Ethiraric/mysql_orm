@@ -5,6 +5,10 @@
 
 namespace mysql_orm
 {
+/** Either On, Off, or Undefined.
+ *
+ * A value of Undefined means the default behavior should be used.
+ */
 enum class Tristate
 {
   Undefined,
@@ -12,6 +16,15 @@ enum class Tristate
   Off
 };
 
+/** Aggregation of the different column constraints.
+ *
+ * Each Tag must have overloaded its operator(). Upon construction, ColumnTags
+ * will invoke each of its arguments' operator(). Each of them should edit the
+ * constraint(s) accordingly.
+ *
+ * One can create its own class editing more than one constraints to have a
+ * custom behavior.
+ */
 struct ColumnTags
 {
   template <typename... TagList>
@@ -28,6 +41,7 @@ struct ColumnTags
         dst += ' ';
       dst += app;
     };
+
     if (this->nullable == Tristate::Off)
       add_word(ret, "NOT NULL");
     if (this->primary_key)
@@ -56,45 +70,45 @@ private:
 
 struct Nullable
 {
-  template <typename Column>
-  constexpr void operator()(Column& col)
+  template <typename Tags>
+  constexpr void operator()(Tags& tags)
   {
-    if (col.nullable != Tristate::Undefined)
+    if (tags.nullable != Tristate::Undefined)
       throw std::runtime_error("Nullable specified multiple times");
-    col.nullable = Tristate::On;
+    tags.nullable = Tristate::On;
   }
 };
 
 struct NotNull
 {
-  template <typename Column>
-  constexpr void operator()(Column& col)
+  template <typename Tags>
+  constexpr void operator()(Tags& tags)
   {
-    if (col.nullable != Tristate::Undefined)
+    if (tags.nullable != Tristate::Undefined)
       throw std::runtime_error("Nullable specified multiple times");
-    col.nullable = Tristate::Off;
+    tags.nullable = Tristate::Off;
   }
 };
 
 struct PrimaryKey
 {
-  template <typename Column>
-  constexpr void operator()(Column& col)
+  template <typename Tags>
+  constexpr void operator()(Tags& tags)
   {
-    if (col.primary_key)
+    if (tags.primary_key)
       throw std::runtime_error("Primary key specified multiple times");
-    col.primary_key = true;
+    tags.primary_key = true;
   }
 };
 
 struct Autoincrement
 {
-  template <typename Column>
-  constexpr void operator()(Column& col)
+  template <typename Tags>
+  constexpr void operator()(Tags& tags)
   {
-    if (col.auto_increment)
+    if (tags.auto_increment)
       throw std::runtime_error("Autoincrement specified multiple times");
-    col.auto_increment = true;
+    tags.auto_increment = true;
   }
 };
 }
