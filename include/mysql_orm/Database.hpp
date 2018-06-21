@@ -12,15 +12,10 @@
 #include <mysql_orm/meta/AllSame.hpp>
 #include <mysql_orm/meta/AttributePtrDissector.hpp>
 #include <mysql_orm/meta/FindMapped.hpp>
+#include <mysql_orm/meta/TableModelGetter.hpp>
 
 namespace mysql_orm
 {
-template <typename Table>
-struct TableModelGetter
-{
-  using type = typename std::remove_reference_t<Table>::model_type;
-};
-
 template <typename... Tables>
 class Database
 {
@@ -66,8 +61,8 @@ public:
   template <typename Model>
   auto select()
   {
-    using Table_t =
-        typename meta::FindMapped<TableModelGetter, Model, Tables...>::type;
+    using Table_t = typename meta::
+        FindMapped<meta::TableModelGetter, Model, Tables...>::type;
     static_assert(!std::is_same_v<Table_t, void>,
                   "Failed to find table for model");
     return std::get<Table_t>(this->tables).template select<>(*this->handle);
@@ -80,7 +75,8 @@ public:
                                   meta::AttributeGetter_t<decltype(Attrs)>...>,
                   "Attributes do not refer to the same model");
     using Model_t = meta::AttributeGetter_t<decltype(Attr)>;
-    using Table_t = meta::FindMapped<TableModelGetter, Model_t, Tables...>;
+    using Table_t =
+        meta::FindMapped<meta::TableModelGetter, Model_t, Tables...>;
     static_assert(!std::is_same_v<Table_t, void>,
                   "Failed to find table for model");
     return std::get<Table_t>(this->tables)
@@ -90,8 +86,8 @@ public:
   template <typename Model>
   auto update()
   {
-    using Table_t =
-        typename meta::FindMapped<TableModelGetter, Model, Tables...>::type;
+    using Table_t = typename meta::
+        FindMapped<meta::TableModelGetter, Model, Tables...>::type;
     static_assert(!std::is_same_v<Table_t, void>,
                   "Failed to find table for model");
     return Update<std::remove_reference_t<Table_t>>{
