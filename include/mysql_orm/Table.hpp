@@ -10,6 +10,7 @@
 #include <mysql/mysql.h>
 
 #include <mysql_orm/Column.hpp>
+#include <mysql_orm/ColumnNamesJoiner.hpp>
 #include <mysql_orm/Select.hpp>
 #include <mysql_orm/StatementBinder.hpp>
 #include <mysql_orm/StatementFinalizer.hpp>
@@ -19,25 +20,6 @@
 
 namespace mysql_orm
 {
-template <typename Table, auto Attr, auto... Attrs>
-struct ColumnNamesJoiner
-{
-  static std::string join(Table const& t)
-  {
-    return '`' + t.template getColumn<Attr>().getName() + "`, " +
-           ColumnNamesJoiner<Table, Attrs...>::join(t);
-  }
-};
-
-template <typename Table, auto Attr>
-struct ColumnNamesJoiner<Table, Attr>
-{
-  static std::string join(Table const& t)
-  {
-    return '`' + t.template getColumn<Attr>().getName() + '`';
-  }
-};
-
 template <typename... Columns>
 class Table
 {
@@ -141,7 +123,8 @@ private:
     {
       auto ss = std::stringstream{};
 
-      ss << "SELECT " << ColumnNamesJoiner<Table, Attrs...>::join(t) << ' ';
+      ss << "SELECT " << details::ColumnNamesJoiner<Table, Attrs...>::join(t)
+         << ' ';
       ss << "FROM `" << t.table_name << '`';
       return ss;
     }
