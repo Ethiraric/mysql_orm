@@ -20,6 +20,16 @@
 
 namespace mysql_orm
 {
+/** A SQL Table.
+ *
+ * The table can be constructed with a name and columns (instanciations of the
+ * `Column` template). Users should not manipulate this class directly.
+ *
+ * For the code to compile, all columns must refer to the same Model.
+ *
+ * The class defines one member type:
+ *   - `model_type`: Alias to the Model the table refers to.
+ */
 template <typename... Columns>
 class Table
 {
@@ -39,6 +49,8 @@ public:
   Table& operator=(Table const& rhs) = default;
   Table& operator=(Table&& rhs) noexcept = default;
 
+  /** Returns a SQL statement to create the table.
+   */
   std::string getSchema() const
   {
     auto ss = std::stringstream{};
@@ -59,6 +71,8 @@ public:
     return this->table_name;
   }
 
+  /** Returns a query to select all fields from the table.
+   */
   auto select(MYSQL& mysql) const
   {
     return Select<Table,
@@ -66,18 +80,24 @@ public:
         mysql, *this);
   }
 
+  /** Returns a query to select some fields from the table.
+   */
   template <auto... Attrs>
   auto select(MYSQL& mysql) const
   {
     return Select<Table, Attrs...>(mysql, *this);
   }
 
+  /** Returns a stringstream with the select query for specified fileds.
+   */
   template <auto... Attrs>
   std::stringstream selectss() const
   {
     return SelectQueryBuilder<void, Attrs...>::select(*this);
   }
 
+  /** Returns the column associated to the specified attribute.
+   */
   template <auto Attr>
   auto const& getColumn() const noexcept
   {
@@ -87,6 +107,8 @@ public:
     return std::get<Column_t>(this->columns);
   }
 
+  /** Binds all the MySQL output fields.
+   */
   static void bindAll(model_type& model, std::vector<MYSQL_BIND>& out_binds)
   {
     StatementOutBinder<model_type,
@@ -95,6 +117,11 @@ public:
                                                            &out_binds[0]);
   }
 
+  /** Performs last-minute operations on fields before copying.
+   *
+   * This mostly boils down to correctly assigning lengths to TEXT fields
+   * (std::string::resize and reallocating C-style arrays).
+   */
   static void finalizeAll(model_type& model,
                           std::vector<MYSQL_BIND>& binds,
                           std::vector<unsigned long>& lengths,
@@ -116,6 +143,8 @@ public:
   }
 
 private:
+  /** Returns a stringstream with a SELECT query for the given attributes.
+   */
   template <typename Dummy = void, auto... Attrs>
   struct SelectQueryBuilder
   {
@@ -130,6 +159,8 @@ private:
     }
   };
 
+  /** Returns a stringstream with a SELECT query for all attributes.
+   */
   template <typename Dummy>
   struct SelectQueryBuilder<Dummy>
   {
@@ -153,6 +184,18 @@ private:
   std::tuple<Columns...> columns;
 };
 
+/** Helper function to create a table.
+ *
+ * Used the following way:
+ * ```
+ * make_table(make_column<&Model::Field1>("field1", PrimaryKey{}),
+ *            make_column<&Model::Field2>("field2", NotNull{}),
+ *            make_column<&Model::Field3>("field3")))
+ * ```
+ *
+ * The return value is left opaque to the user and should at best be stored in
+ * a type-deduced value (`auto`).
+ */
 template <typename... Columns>
 auto make_table(std::string name, Columns&&... cols)
 {
