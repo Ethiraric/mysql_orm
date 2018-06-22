@@ -58,6 +58,11 @@ public:
         *this->mysql_handle, *this, this->table.get(), std::move(limit)};
   }
 
+  auto operator()()
+  {
+    return this->build().execute();
+  }
+
   std::string buildquery() const
   {
     return this->buildqueryss().str();

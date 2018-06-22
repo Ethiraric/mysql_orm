@@ -45,6 +45,11 @@ public:
         std::move(set.assignments)};
   }
 
+  auto operator()()
+  {
+    return this->build().execute();
+  }
+
   size_t getNbInputSlots() const noexcept
   {
     return 0;

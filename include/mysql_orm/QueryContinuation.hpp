@@ -59,6 +59,17 @@ public:
   QueryContinuation& operator=(QueryContinuation const& rhs) noexcept = default;
   QueryContinuation& operator=(QueryContinuation&& rhs) noexcept = default;
 
+  template <typename T>
+  auto operator()(T&& t)
+  {
+    return Continuation::operator()(std::forward<T>(t));
+  }
+
+  auto operator()()
+  {
+    return this->build().execute();
+  }
+
   std::string buildquery() const
   {
     return this->buildqueryss().str();
