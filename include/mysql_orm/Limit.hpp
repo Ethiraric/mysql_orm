@@ -11,6 +11,17 @@
 
 namespace mysql_orm
 {
+/** Limit clause arguments.
+ *
+ * This class is used as an argument to a `Select`'s or `Where`'s `operator()`
+ * The limit is embedded in the template argument.
+ * If the limit is set to 0, a runtime value may be supplied upon
+ * initialization.
+ *
+ * This class is not the actual query but a class that serves as a tag for the
+ * other query classes.
+ * The query class is `LimitQueryImpl`.
+ */
 template <size_t limit = 0>
 struct Limit
 {
@@ -23,6 +34,14 @@ struct Limit<0>
   size_t const value{0};
 };
 
+/** A Limit query.
+ *
+ * The class continues a `Select` or `Where` query.
+ * Takes a limit as argument, which must be a `Limit`.
+ *
+ * `buildquery` returns the SQL query as a std::string.
+ * `build` returns a `Statement`, which can later be `execute()`d.
+ */
 template <typename Query, typename Table, typename Limit>
 class LimitQueryImpl
 {

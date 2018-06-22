@@ -14,6 +14,17 @@
 
 namespace mysql_orm
 {
+/** A Select query.
+ *
+ * The class selects all attributes that are given in template arguments.
+ * All attributes must refer to the model of the table for the program to
+ * compile.
+ *
+ * `buildquery` returns the SQL query as a std::string.
+ * `build` returns a `Statement`, which can later be `execute()`d.
+ *
+ * The `operator()` can be used to continue the query (Where, Limit).
+ */
 template <typename Table, auto... Attrs>
 class Select
 {

@@ -9,16 +9,39 @@
 
 namespace mysql_orm
 {
+/** Set clause arguments.
+ *
+ * This class is used as an argument to an `Update`'s `operator()`.
+ * The constructor takes as argument the list of assignments to perform.
+ * See the `c` and `ref` functions.
+ *
+ * This class is not the actual query but a class that serves as a tag for the
+ * other query classes.
+ * The query class is `SetQueryImpl`.
+ */
 template <typename Assignments>
 struct Set
 {
-  Set(Assignments&& a) : assignments{a}
+  Set(Assignments&& a) : assignments{std::move(a)}
   {
   }
 
   Assignments assignments;
 };
 
+/** A Set query.
+ *
+ * The class continues an `Update` query.
+ * Takes a list of assignments as parameter, which must be an `AssignmentsList`.
+ *
+ * `buildquery` returns the SQL query as a std::string.
+ * `build` returns a `Statement`, which can later be `execute()`d.
+ *
+ * The `operator()` can be used to continue the query (Where).
+ *
+ * TODO(ethiraric): Check that all columns from the assignments refer to the
+ * model.
+ */
 template <typename Query, typename Table, typename Assignments>
 struct SetQueryImpl
 {

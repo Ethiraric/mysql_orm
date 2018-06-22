@@ -10,6 +10,16 @@
 
 namespace mysql_orm
 {
+/** Where clause arguments.
+ *
+ * This class is used as an argument to a `Select`'s or `Update`'s `operator()`.
+ * The constructor takes as argument the condition to apply to the Where query.
+ * See the `c` and `ref` functions.
+ *
+ * This class is not the actual query but a class that serves as a tag for the
+ * other query classes.
+ * The query class is `WhereQueryImpl`.
+ */
 template <typename Condition>
 struct Where
 {
@@ -27,6 +37,19 @@ public:
   Condition condition;
 };
 
+/** A Where query.
+ *
+ * The class continues a `Select` or `Update` query.
+ * Takes a condition as parameter, which must be an `OperatorClosure`.
+ *
+ * `buildquery` returns the SQL query as a std::string.
+ * `build` returns a `Statement`, which can later be `execute()`d.
+ *
+ * The `operator()` can be used to continue the query (Limit).
+ *
+ * TODO(ethiraric): Check that all columns from the conditions refer to the
+ * model.
+ */
 template <typename Query, typename Table, typename Condition>
 class WhereQueryImpl
 {
