@@ -7,6 +7,12 @@ namespace mysql_orm
 {
 namespace meta
 {
+/** Metafunction returning whether the type is an instanciation of the template.
+ *
+ * For instance:
+ *   - `IsTemplateInstanciation<std::vector, std::vector<int>>` == `true`
+ *   - `IsTemplateInstanciation<std::map, std::optional<double>>` == `false`
+ */
 template <template <typename...> typename Tpl, typename T>
 struct IsTemplateInstanciation : std::false_type
 {

@@ -7,6 +7,10 @@ namespace mysql_orm
 {
 namespace meta
 {
+/** Metafunction returning the type inside a std::optional.
+ *
+ * If the given type is not an optional, returns std::nullopt_t.
+ */
 template <typename T>
 struct LiftOptional
 {

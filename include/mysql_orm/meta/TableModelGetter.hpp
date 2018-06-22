@@ -7,6 +7,8 @@ namespace mysql_orm
 {
 namespace meta
 {
+/** Metafunction returning the model type from the table.
+ */
 template <typename Table>
 struct TableModelGetter
 {

@@ -10,6 +10,13 @@ namespace mysql_orm
 {
 namespace meta
 {
+/** Metafunction returning the type whose mapped type is the Needle.
+ *
+ * Takes a list of types T. Applies a mapping metafunction to each of these
+ * types, whose return type is U. Searches the Needle amongst all Us, and
+ * returns the type T associated.
+ * Returns void if not found.
+ */
 template <template <typename> typename Function,
           typename Needle,
           typename T,
@@ -27,6 +34,13 @@ struct FindMapped<Function, Needle, T>
 {
 };
 
+/** Metafunction returning the type whose mapped value is the Needle.
+ *
+ * Takes a list of types T. Applies a mapping metafunction to each of these
+ * types, whose return value is V. Searches the Needle amongst all Vs, and
+ * returns the type T associated.
+ * Returns void if not found.
+ */
 template <template <typename> typename Function,
           auto Needle,
           typename T,

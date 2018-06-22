@@ -7,6 +7,8 @@ namespace mysql_orm
 {
 namespace meta
 {
+/** Metafunction returning true if the values and types match.
+ */
 template <auto T, auto U>
 struct TypeValEquals : std::false_type
 {

@@ -9,6 +9,8 @@ namespace mysql_orm
 {
 namespace meta
 {
+/** Metafunction returning true if T is an instanciation of std::optional.
+ */
 template <typename T>
 struct IsOptional : IsTemplateInstanciation<std::optional, T>
 {

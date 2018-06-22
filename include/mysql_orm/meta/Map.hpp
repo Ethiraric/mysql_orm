@@ -5,6 +5,8 @@ namespace mysql_orm
 {
 namespace meta
 {
+/** Metafunction applying a function (returning a type) to a type.
+ */
 template <template <typename> typename Function, typename Type>
 struct Map
 {
@@ -14,6 +16,8 @@ struct Map
 template <template <typename> typename Function, typename Type>
 using Map_t = typename Map<Function, Type>::type;
 
+/** Metafunction applying a function (returning a value) to a type.
+ */
 template <template <typename> typename Function, typename Type>
 struct MapValue
 {

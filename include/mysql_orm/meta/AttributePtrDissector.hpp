@@ -5,6 +5,13 @@ namespace mysql_orm
 {
 namespace meta
 {
+/** Metafunction returning the type of the class and field from an attribute.
+ *
+ * Takes as argument the type of a pointer to an attribute.
+ * Contains two member types:
+ *   - `class_t`: Class to which the attribute belongs.
+ *   - `attribute_t`: Type of the field.
+ */
 template <typename AttributePtr>
 struct AttributePtrDissector;
 
@@ -15,6 +22,8 @@ struct AttributePtrDissector<Attribute Class::*>
   using attribute_t = Attribute;
 };
 
+/** Metafunction returning the type of the field from an attribute
+ */
 template <typename AttributePtr>
 struct AttributeGetter
 {
