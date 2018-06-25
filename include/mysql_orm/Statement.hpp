@@ -62,9 +62,20 @@ public:
   Statement& operator=(Statement const& rhs) = delete;
   Statement& operator=(Statement&& rhs) noexcept = default;
 
+  auto operator()()
+  {
+    return this->execute();
+  }
+
   void bindInToQuery() noexcept
   {
     this->orm_query.bindInTo(&this->in_binds[0]);
+  }
+
+  void bindInsert(Model tmp)
+  {
+    this->model = std::move(tmp);
+    this->orm_query.bindInsert(this->model, &this->in_binds[0]);
   }
 
   void bindOutToQuery()

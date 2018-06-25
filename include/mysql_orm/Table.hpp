@@ -11,6 +11,7 @@
 
 #include <mysql_orm/Column.hpp>
 #include <mysql_orm/ColumnNamesJoiner.hpp>
+#include <mysql_orm/Insert.hpp>
 #include <mysql_orm/Select.hpp>
 #include <mysql_orm/StatementBinder.hpp>
 #include <mysql_orm/StatementFinalizer.hpp>
@@ -88,12 +89,37 @@ public:
     return Select<Table, Attrs...>(mysql, *this);
   }
 
-  /** Returns a stringstream with the select query for specified fileds.
+  /** Returns a query to insert all fields into the table.
+   */
+  auto insert(MYSQL& mysql, model_type const* model = nullptr) const
+  {
+    return Insert<Table,
+                  meta::MapValue_v<meta::ColumnAttributeGetter, Columns>...>(
+        mysql, *this, model);
+  }
+
+  /** Returns a query to insert some fields into the table.
+   */
+  template <auto... Attrs>
+  auto insert(MYSQL& mysql, model_type const* model = nullptr) const
+  {
+    return Insert<Table, Attrs...>(mysql, *this, model);
+  }
+
+  /** Returns a stringstream with the select query for specified fields.
    */
   template <auto... Attrs>
   std::stringstream selectss() const
   {
     return SelectQueryBuilder<void, Attrs...>::select(*this);
+  }
+
+  /** Returns a stringstream with the insert query for specified fields.
+   */
+  template <auto... Attrs>
+  std::stringstream insertss() const
+  {
+    return InsertQueryBuilder<void, Attrs...>::insert(*this);
   }
 
   /** Returns the column associated to the specified attribute.
@@ -159,23 +185,25 @@ private:
     }
   };
 
-  /** Returns a stringstream with a SELECT query for all attributes.
+  /** Returns a stringstream with a INSERT query for the given attributes.
    */
-  template <typename Dummy>
-  struct SelectQueryBuilder<Dummy>
+  template <typename Dummy = void, auto... Attrs>
+  struct InsertQueryBuilder
   {
-    static std::stringstream select(Table const& t)
+    static std::stringstream insert(Table const& t)
     {
       auto ss = std::stringstream{};
-      auto i = std::size_t{0};
 
-      ss << "SELECT ";
-      for_each_tuple(t.columns, [&](auto const& col) {
-        ss << '`' << col.getName() << '`';
-        if (++i < std::tuple_size<decltype(t.columns)>())
+      ss << "INSERT INTO `" << t.table_name << '`' << ' ' << '('
+         << details::ColumnNamesJoiner<Table, Attrs...>::join(t)
+         << ") VALUES (";
+      for (auto i = std::size_t{0}; i < sizeof...(Attrs); ++i)
+      {
+        if (i)
           ss << ',' << ' ';
-      });
-      ss << " FROM `" << t.table_name << '`';
+        ss << '?';
+      }
+      ss << ')';
       return ss;
     }
   };

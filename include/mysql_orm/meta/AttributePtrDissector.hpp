@@ -32,6 +32,18 @@ struct AttributeGetter
 
 template <typename AttributePtr>
 using AttributeGetter_t = typename AttributeGetter<AttributePtr>::type;
+
+/** Metafunction returning the type of the model from an attribute
+ */
+template <typename AttributePtr>
+struct AttributeModelGetter
+{
+  using type = typename AttributePtrDissector<AttributePtr>::class_t;
+};
+
+template <typename AttributePtr>
+using AttributeModelGetter_t =
+    typename AttributeModelGetter<AttributePtr>::type;
 }
 }
 
