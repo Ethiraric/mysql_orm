@@ -41,7 +41,7 @@ class QueryContinuation : public Continuation
 {
 public:
   using model_type = typename Query::model_type;
-  static inline constexpr auto is_select_query{Query::is_select_query};
+  static inline constexpr auto query_type{Query::query_type};
 
   template <typename... ContinuationArgs>
   QueryContinuation(MYSQL& mysql,

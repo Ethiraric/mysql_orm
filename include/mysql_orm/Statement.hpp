@@ -10,6 +10,7 @@
 #include <mysql/mysql.h>
 
 #include <mysql_orm/Exception.hh>
+#include <mysql_orm/QueryType.hpp>
 
 namespace mysql_orm
 {
@@ -17,7 +18,7 @@ template <typename Query, typename Model>
 class Statement
 {
 public:
-  static inline constexpr auto is_select_query{Query::is_select_query};
+  static inline constexpr auto query_type{Query::query_type};
 
   Statement(MYSQL& mysql, Query pquery)
     : mysql_handle{&mysql},
@@ -40,7 +41,7 @@ public:
                            std::string{mysql_error(this->mysql_handle)});
     std::memset(
         this->out_binds.data(), 0, this->out_binds.size() * sizeof(MYSQL_BIND));
-    if constexpr (is_select_query)
+    if constexpr (query_type == QueryType::Select)
     {
       std::memset(
           this->in_binds.data(), 0, this->in_binds.size() * sizeof(MYSQL_BIND));
@@ -52,7 +53,8 @@ public:
       }
       this->bindOutToQuery();
     }
-    this->bindInToQuery();
+    if constexpr (query_type != QueryType::Insert)
+      this->bindInToQuery();
   }
 
   Statement(Statement const& b) = delete;
@@ -74,8 +76,8 @@ public:
 
   void bindInsert(Model tmp)
   {
-    this->model = std::move(tmp);
-    this->orm_query.bindInsert(this->model, &this->in_binds[0]);
+    this->temp = std::move(tmp);
+    this->orm_query.bindInsert(this->temp, &this->in_binds[0]);
   }
 
   void bindOutToQuery()
@@ -85,7 +87,7 @@ public:
 
   auto execute()
   {
-    if constexpr (Query::is_select_query)
+    if constexpr (query_type == QueryType::Select)
     {
       auto ret = std::vector<Model>{};
       this->sql_execute();
@@ -111,7 +113,7 @@ public:
 private:
   size_t getNbOutputSlots() const noexcept
   {
-    if constexpr (is_select_query)
+    if constexpr (query_type == QueryType::Select)
       return this->orm_query.getNbOutputSlots();
     else
       return 0;

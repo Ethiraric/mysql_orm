@@ -6,6 +6,7 @@
 
 #include <mysql/mysql.h>
 
+#include <mysql_orm/QueryType.hpp>
 #include <mysql_orm/Set.hpp>
 #include <mysql_orm/Statement.hpp>
 
@@ -16,7 +17,7 @@ class Update
 {
 public:
   using model_type = typename Table::model_type;
-  static inline constexpr auto is_select_query{false};
+  static inline constexpr auto query_type{QueryType::Update};
 
   Update(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{t}
   {

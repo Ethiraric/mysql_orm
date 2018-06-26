@@ -40,3 +40,37 @@ TEST_CASE("[Insert] Insert buildquery", "[Insert]")
   CHECK(d.insert<&Record::i, &Record::s>(r).buildquery() ==
         "INSERT INTO `records` (`i`, `s`) VALUES (?, ?)");
 }
+
+TEST_CASE("[Insert] Insert", "[Insert]")
+{
+  auto table_records = make_table("records",
+                                  make_column<&Record::id>("id"),
+                                  make_column<&Record::i>("i"),
+                                  make_column<&Record::s>("s"));
+  auto d = make_database("localhost",
+                         3306,
+                         "mysql_orm_test",
+                         "",
+                         "mysql_orm_test_db",
+                         table_records);
+  d.recreate();
+  d.execute(
+      "INSERT INTO `records` (`id`, `i`, `s`) VALUES "
+      R"((1, 1, "one"),)"
+      R"((2, 2, "two"),)"
+      R"((3, 4, "four"))");
+
+  SECTION("One row")
+  {
+    d.insert(Record{4, 8, "eight"})();
+    auto const res = d.select<Record>().build().execute();
+    static_assert(
+        std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
+        "Wrong return type");
+    REQUIRE(res.size() == 4);
+    CHECK(res[0] == Record{1, 1, "one"});
+    CHECK(res[1] == Record{2, 2, "two"});
+    CHECK(res[2] == Record{3, 4, "four"});
+    CHECK(res[3] == Record{4, 8, "eight"});
+  }
+}

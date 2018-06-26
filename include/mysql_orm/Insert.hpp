@@ -6,6 +6,7 @@
 
 #include <mysql/mysql.h>
 
+#include <mysql_orm/QueryType.hpp>
 #include <mysql_orm/Statement.hpp>
 #include <mysql_orm/StatementBinder.hpp>
 #include <mysql_orm/meta/AttributePtrDissector.hpp>
@@ -17,7 +18,7 @@ class Insert
 {
 public:
   using model_type = typename Table::model_type;
-  static inline constexpr auto is_select_query{false};
+  static inline constexpr auto query_type{QueryType::Insert};
 
   Insert(MYSQL& mysql, Table const& t, model_type const* to_insert) noexcept
     : mysql_handle{&mysql}, table{t}, model_to_insert{to_insert}
@@ -49,7 +50,7 @@ public:
   {
     auto stmt = Statement<Insert, model_type>{*this->mysql_handle, *this};
     if (this->model_to_insert)
-      stmt.bindInsert(this->model_to_insert);
+      stmt.bindInsert(*this->model_to_insert);
     return stmt;
   }
 
@@ -66,7 +67,7 @@ public:
   void bindInsert(model_type const& model, MYSQL_BIND* bindarray) const noexcept
   {
     (StatementInBinder<typename meta::AttributePtrDissector<decltype(
-         Attrs)>::attribute_t>::bind(model.*Attrs, ++bindarray),
+         Attrs)>::attribute_t>::bind(model.*Attrs, bindarray++),
      ...);
   }
 

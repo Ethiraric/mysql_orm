@@ -7,6 +7,7 @@
 #include <mysql/mysql.h>
 
 #include <mysql_orm/Limit.hpp>
+#include <mysql_orm/QueryType.hpp>
 #include <mysql_orm/Statement.hpp>
 #include <mysql_orm/StatementBinder.hpp>
 #include <mysql_orm/StatementFinalizer.hpp>
@@ -30,7 +31,7 @@ class Select
 {
 public:
   using model_type = typename Table::model_type;
-  static inline constexpr auto is_select_query{true};
+  static inline constexpr auto query_type{QueryType::Select};
 
   Select(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{t}
   {
