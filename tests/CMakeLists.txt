@@ -1,13 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
 #configuration
-project("demangler")
-
-#includes directories
-include_directories(
-  ../include
-  ./
-)
+project("mysql_orm")
 
 #sources files
 set(SRCS
@@ -25,4 +19,5 @@ set(SRCS
 
 #binary
 add_executable(mysql_orm_tests ${SRCS})
-target_link_libraries(mysql_orm_tests mysqlclient)
+target_include_directories(mysql_orm_tests PRIVATE .)
+target_link_libraries(mysql_orm_tests mysqlclient mysql_orm)
