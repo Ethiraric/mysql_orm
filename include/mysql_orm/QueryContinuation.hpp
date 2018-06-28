@@ -15,11 +15,11 @@ namespace mysql_orm
  * as `Set` to `Update`, or `Limit` to `Where`). `Select` and `Update` are not
  * continuation queries.
  *
-  * The class inherits the Continuation given in template argument. For
-  * instance, when implementing Where, an implementation class `WhereImpl` (for
-  * instance templated over a `Select` instanciation, which we call `Query`)
-  * should contain methods specific to the Where clause, and a `WhereQuery`
-  * alias may be created on `QueryContinuation<Query, Table, WhereImpl<...>>`.
+ * The class inherits the Continuation given in template argument. For
+ * instance, when implementing Where, an implementation class `WhereImpl` (for
+ * instance templated over a `Select` instanciation, which we call `Query`)
+ * should contain methods specific to the Where clause, and a `WhereQuery`
+ * alias may be created on `QueryContinuation<Query, Table, WhereImpl<...>>`.
  *
  * This class defines:
  *   - `buildquery`: Returns the SQL query as a std::string.
@@ -85,23 +85,19 @@ public:
     return this->query.getNbOutputSlots();
   }
 
-  void bindInTo(MYSQL_BIND* bindarray) const noexcept
+  void bindInTo(InputBindArray& binds) const noexcept
   {
-    this->bindInToImpl(*this, bindarray, 0);
+    this->bindInToImpl(*this, binds, 0);
   }
 
-  void bindOutTo(model_type& model, std::vector<MYSQL_BIND>& bindarray) const
+  void bindOutTo(model_type& model, OutputBindArray& binds) const
   {
-    this->query.bindOutTo(model, bindarray);
+    this->query.bindOutTo(model, binds);
   }
 
-  void finalizeBindings(model_type& model,
-                        std::vector<MYSQL_BIND>& binds,
-                        std::vector<unsigned long>& lengths,
-                        std::vector<my_bool>& are_null,
-                        std::vector<my_bool>& errors)
+  void finalizeBindings(model_type& model, OutputBindArray& binds)
   {
-    this->query.finalizeBindings(model, binds, lengths, are_null, errors);
+    this->query.finalizeBindings(model, binds);
   }
 
   Statement<QueryContinuation, model_type> build() const
@@ -123,19 +119,15 @@ private:
   }
 
   template <typename Q>
-  static auto bindInToImpl(Q const& q,
-                           MYSQL_BIND* bindarray,
-                           int) noexcept
-      -> decltype(q.Continuation::bindInTo(bindarray), void())
+  static auto bindInToImpl(Q const& q, InputBindArray& binds, int) noexcept
+      -> decltype(q.Continuation::bindInTo(binds), void())
   {
-    q.Continuation::bindInTo(bindarray);
+    q.Continuation::bindInTo(binds);
   }
   template <typename Q>
-  static void bindInToImpl(Q const& q,
-                           MYSQL_BIND* bindarray,
-                           long) noexcept
+  static void bindInToImpl(Q const& q, InputBindArray& binds, long) noexcept
   {
-    q.query.bindInTo(bindarray);
+    q.query.bindInTo(binds);
   }
 };
 

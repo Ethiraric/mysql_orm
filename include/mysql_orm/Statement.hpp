@@ -9,6 +9,7 @@
 
 #include <mysql/mysql.h>
 
+#include <mysql_orm/BindArray.hpp>
 #include <mysql_orm/Exception.hh>
 #include <mysql_orm/QueryType.hpp>
 
@@ -26,9 +27,6 @@ public:
       sql_query{this->orm_query.buildquery()},
       in_binds{this->orm_query.getNbInputSlots()},
       out_binds(this->getNbOutputSlots()),
-      out_lengths(this->getNbOutputSlots()),
-      out_is_null(this->getNbOutputSlots()),
-      out_error(this->getNbOutputSlots()),
       stmt{nullptr, &mysql_stmt_close}
   {
     this->stmt.reset(mysql_stmt_init(this->mysql_handle));
@@ -39,20 +37,8 @@ public:
             this->stmt.get(), this->sql_query.c_str(), this->sql_query.size()))
       throw MySQLException("Failed to prepare statement: " +
                            std::string{mysql_error(this->mysql_handle)});
-    std::memset(
-        this->out_binds.data(), 0, this->out_binds.size() * sizeof(MYSQL_BIND));
     if constexpr (query_type == QueryType::Select)
-    {
-      std::memset(
-          this->in_binds.data(), 0, this->in_binds.size() * sizeof(MYSQL_BIND));
-      for (auto i = 0u; i < this->orm_query.getNbOutputSlots(); ++i)
-      {
-        this->out_binds[i].length = &this->out_lengths[i];
-        this->out_binds[i].is_null = &this->out_is_null[i];
-        this->out_binds[i].error = &this->out_error[i];
-      }
       this->bindOutToQuery();
-    }
     if constexpr (query_type != QueryType::Insert)
       this->bindInToQuery();
   }
@@ -71,13 +57,13 @@ public:
 
   void bindInToQuery() noexcept
   {
-    this->orm_query.bindInTo(&this->in_binds[0]);
+    this->orm_query.bindInTo(this->in_binds);
   }
 
   void bindInsert(Model tmp)
   {
     this->temp = std::move(tmp);
-    this->orm_query.bindInsert(this->temp, &this->in_binds[0]);
+    this->orm_query.bindInsert(this->temp, this->in_binds);
   }
 
   void bindOutToQuery()
@@ -95,11 +81,7 @@ public:
       while (!(errcode = mysql_stmt_fetch(this->stmt.get())))
       {
         auto copy = this->temp;
-        this->orm_query.finalizeBindings(copy,
-                                         this->out_binds,
-                                         this->out_lengths,
-                                         this->out_is_null,
-                                         this->out_error);
+        this->orm_query.finalizeBindings(copy, this->out_binds);
         ret.emplace_back(std::move(copy));
       }
       if (errcode != MYSQL_NO_DATA)
@@ -121,10 +103,12 @@ private:
 
   void sql_execute()
   {
+    auto* mysql_out_binds = const_cast<MYSQL_BIND*>(this->out_binds.data());
+    auto* mysql_in_binds = const_cast<MYSQL_BIND*>(this->in_binds.data());
     if ((!this->out_binds.empty() &&
-         mysql_stmt_bind_result(this->stmt.get(), this->out_binds.data())) ||
+         mysql_stmt_bind_result(this->stmt.get(), mysql_out_binds)) ||
         (!this->in_binds.empty() &&
-         mysql_stmt_bind_param(this->stmt.get(), this->in_binds.data())))
+         mysql_stmt_bind_param(this->stmt.get(), mysql_in_binds)))
       throw MySQLException("Failed to bind statement: " +
                            std::string{mysql_stmt_error(this->stmt.get())});
     if (mysql_stmt_execute(this->stmt.get()))
@@ -136,11 +120,8 @@ private:
   Model temp;
   Query orm_query;
   std::string sql_query;
-  std::vector<MYSQL_BIND> in_binds;
-  std::vector<MYSQL_BIND> out_binds;
-  std::vector<unsigned long> out_lengths;
-  std::vector<my_bool> out_is_null;
-  std::vector<my_bool> out_error;
+  InputBindArray in_binds;
+  OutputBindArray out_binds;
   std::unique_ptr<MYSQL_STMT, decltype(&mysql_stmt_close)> stmt;
 };
 }

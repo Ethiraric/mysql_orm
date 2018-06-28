@@ -13,8 +13,6 @@
 #include <mysql_orm/ColumnNamesJoiner.hpp>
 #include <mysql_orm/Insert.hpp>
 #include <mysql_orm/Select.hpp>
-#include <mysql_orm/StatementBinder.hpp>
-#include <mysql_orm/StatementFinalizer.hpp>
 #include <mysql_orm/Utils.hpp>
 #include <mysql_orm/meta/ColumnAttributeGetter.hpp>
 #include <mysql_orm/meta/FindMapped.hpp>
@@ -131,36 +129,6 @@ public:
         FindMappedValue<meta::ColumnAttributeGetter, Attr, Columns...>::type;
     static_assert(!std::is_same_v<Column_t, void>, "Failed to find attribute");
     return std::get<Column_t>(this->columns);
-  }
-
-  /** Binds all the MySQL output fields.
-   */
-  static void bindAll(model_type& model, std::vector<MYSQL_BIND>& out_binds)
-  {
-    StatementOutBinder<model_type,
-                       meta::MapValue_v<meta::ColumnAttributeGetter,
-                                        Columns>...>::bind(model,
-                                                           &out_binds[0]);
-  }
-
-  /** Performs last-minute operations on fields before copying.
-   *
-   * This mostly boils down to correctly assigning lengths to TEXT fields
-   * (std::string::resize and reallocating C-style arrays).
-   */
-  static void finalizeAll(model_type& model,
-                          std::vector<MYSQL_BIND>& binds,
-                          std::vector<unsigned long>& lengths,
-                          std::vector<my_bool>& are_null,
-                          std::vector<my_bool>& errors)
-  {
-    StatementFinalizer<model_type,
-                       meta::MapValue_v<meta::ColumnAttributeGetter,
-                                        Columns>...>::finalize(model,
-                                                               &binds[0],
-                                                               &lengths[0],
-                                                               &are_null[0],
-                                                               &errors[0]);
   }
 
   size_t getNbColumns() const noexcept

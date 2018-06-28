@@ -1,14 +1,47 @@
 #ifndef MYSQL_ORM_WHERECONDITIONDSL_HPP_
 #define MYSQL_ORM_WHERECONDITIONDSL_HPP_
 
+#include <chrono>
 #include <ostream>
 
 #include <mysql/mysql.h>
 
-#include <mysql_orm/StatementBinder.hpp>
+#include <mysql_orm/BindArray.hpp>
 
 namespace mysql_orm
 {
+namespace details
+{
+inline MYSQL_TIME toMySQLTime(std::tm const& tm) noexcept
+{
+  auto ret = MYSQL_TIME{};
+  // tm_year is the number of years since 1900.
+  ret.year = tm.tm_year + 1900;
+  // January is 0
+  ret.month = tm.tm_mon + 1;
+  ret.day = tm.tm_mday;
+  ret.hour = tm.tm_hour;
+  ret.minute = tm.tm_min;
+  ret.second = tm.tm_sec;
+  return ret;
+}
+
+inline std::tm fromMySQLTime(MYSQL_TIME const& time) noexcept
+{
+  auto ret = std::tm{};
+  // c.f.: toMySQLTime
+  ret.tm_year = time.year - 1900;
+  ret.tm_mon = time.month - 1;
+  ret.tm_mday = time.day;
+  ret.tm_hour = time.hour;
+  ret.tm_min = time.minute;
+  ret.tm_sec = time.second;
+  ret.tm_isdst = -1;
+  std::mktime(&ret);
+  return ret;
+}
+}
+
 enum class OperatorType
 {
   Equals,
@@ -67,10 +100,10 @@ struct AssignmentList
     return this->head.getNbInputSlots() + this->tail.getNbInputSlots();
   }
 
-  void bindInTo(MYSQL_BIND* bindarray) const noexcept
+  void bindInTo(InputBindArray& binds, std::size_t idx) const noexcept
   {
-    this->head.bindInTo(bindarray);
-    this->tail.bindInTo(bindarray + head.getNbInputSlots());
+    this->head.bindInTo(binds, idx);
+    this->tail.bindInTo(binds, idx + head.getNbInputSlots());
   }
 
   Head head;
@@ -102,10 +135,10 @@ struct Assignment
     return this->lhs.getNbInputSlots() + this->rhs.getNbInputSlots();
   }
 
-  void bindInTo(MYSQL_BIND* bindarray) const noexcept
+  void bindInTo(InputBindArray& binds, std::size_t idx) const noexcept
   {
-    this->lhs.bindInTo(bindarray);
-    this->rhs.bindInTo(bindarray + this->lhs.getNbInputSlots());
+    this->lhs.bindInTo(binds, idx);
+    this->rhs.bindInTo(binds, idx + lhs.getNbInputSlots());
   }
 
   Lhs lhs;
@@ -130,9 +163,9 @@ struct OperandWrapper
     return 1;
   }
 
-  void bindInTo(MYSQL_BIND* bindarray) const noexcept
+  void bindInTo(InputBindArray& binds, std::size_t idx) const noexcept
   {
-    StatementInBinder<T>::bind(this->value, bindarray);
+    binds.bind(idx, this->value);
   }
 
   T value;
@@ -153,9 +186,9 @@ struct ref
     return 1;
   }
 
-  void bindInTo(MYSQL_BIND* bindarray) const noexcept
+  void bindInTo(InputBindArray& binds, std::size_t idx) const noexcept
   {
-    StatementInBinder<T>::bind(this->value.get(), bindarray);
+    binds.bind(idx, this->value.get());
   }
 
   std::reference_wrapper<T> value;
@@ -180,10 +213,10 @@ struct OperatorClosure
     return this->lhs.getNbInputSlots() + this->rhs.getNbInputSlots();
   }
 
-  void bindInTo(MYSQL_BIND* bindarray) const noexcept
+  void bindInTo(InputBindArray& binds, std::size_t idx) const noexcept
   {
-    this->lhs.bindInTo(bindarray);
-    this->rhs.bindInTo(bindarray + this->lhs.getNbInputSlots());
+    this->lhs.bindInTo(binds, idx);
+    this->rhs.bindInTo(binds, idx + lhs.getNbInputSlots());
   }
 
 #define MAKE_OPERATORS(op, optype)                                            \
@@ -218,7 +251,7 @@ struct c
     return 0;
   }
 
-  void bindInTo(MYSQL_BIND*) const noexcept
+  void bindInTo(InputBindArray&, std::size_t) const noexcept
   {
   }
 

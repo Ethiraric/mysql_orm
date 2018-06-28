@@ -86,11 +86,10 @@ public:
     return this->query.getNbInputSlots() + this->assignments.getNbInputSlots();
   }
 
-  void bindInTo(MYSQL_BIND* bindarray) const noexcept
+  void bindInTo(InputBindArray& binds) const noexcept
   {
-    auto* firstbind = bindarray + this->query.getNbInputSlots();
-    this->assignments.bindInTo(firstbind);
-    this->query.bindInTo(bindarray);
+    this->query.bindInTo(binds);
+    this->assignments.bindInTo(binds, this->query.getNbInputSlots());
   }
 
 protected:

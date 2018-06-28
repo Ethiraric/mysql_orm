@@ -56,7 +56,7 @@ public:
     return 0;
   }
 
-  void bindInTo(MYSQL_BIND*) const noexcept
+  void bindInTo(InputBindArray&) const noexcept
   {
   }
 

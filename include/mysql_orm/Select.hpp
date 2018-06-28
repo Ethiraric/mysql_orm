@@ -9,8 +9,6 @@
 #include <mysql_orm/Limit.hpp>
 #include <mysql_orm/QueryType.hpp>
 #include <mysql_orm/Statement.hpp>
-#include <mysql_orm/StatementBinder.hpp>
-#include <mysql_orm/StatementFinalizer.hpp>
 #include <mysql_orm/Where.hpp>
 
 namespace mysql_orm
@@ -86,32 +84,23 @@ public:
 
   size_t getNbOutputSlots() const noexcept
   {
-    return sizeof...(Attrs) > 0 ? sizeof...(Attrs) : this->table.get().getNbColumns();
+    return sizeof...(Attrs);
   }
 
-  void bindOutTo(model_type& model, std::vector<MYSQL_BIND>& out_binds) const
+  void bindOutTo(model_type& model, OutputBindArray& binds) const
   {
-    if constexpr (sizeof...(Attrs) > 0)
-      StatementOutBinder<model_type, Attrs...>::bind(model, &out_binds[0]);
-    else
-      Table::bindAll(model, out_binds);
+    auto i = std::size_t{0};
+    (binds.bind(i++, model.*Attrs), ...);
   }
 
-  void bindInTo(MYSQL_BIND*) const noexcept
+  void bindInTo(InputBindArray&) const noexcept
   {
   }
 
-  void finalizeBindings(model_type& model,
-                        std::vector<MYSQL_BIND>& binds,
-                        std::vector<unsigned long>& lengths,
-                        std::vector<my_bool>& are_null,
-                        std::vector<my_bool>& errors)
+  void finalizeBindings(model_type& model, OutputBindArray& binds)
   {
-    if constexpr (sizeof...(Attrs) > 0)
-    StatementFinalizer<model_type, Attrs...>::finalize(
-        model, &binds[0], &lengths[0], &are_null[0], &errors[0]);
-    else
-      Table::finalizeAll(model, binds, lengths, are_null, errors);
+    auto i = std::size_t{0};
+    (binds.finalize(i++, model.*Attrs), ...);
   }
 
 private:

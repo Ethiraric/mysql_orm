@@ -8,7 +8,6 @@
 
 #include <mysql_orm/QueryType.hpp>
 #include <mysql_orm/Statement.hpp>
-#include <mysql_orm/StatementBinder.hpp>
 #include <mysql_orm/meta/AttributePtrDissector.hpp>
 
 namespace mysql_orm
@@ -64,11 +63,10 @@ public:
     return 0;
   }
 
-  void bindInsert(model_type const& model, MYSQL_BIND* bindarray) const noexcept
+  void bindInsert(model_type const& model, InputBindArray& binds) const noexcept
   {
-    (StatementInBinder<typename meta::AttributePtrDissector<decltype(
-         Attrs)>::attribute_t>::bind(model.*Attrs, bindarray++),
-     ...);
+    auto i = std::size_t{0};
+    (binds.bind(i++, model.*Attrs), ...);
   }
 
 private:
