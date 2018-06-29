@@ -87,18 +87,26 @@ TEST_CASE("[Select] Select with optionals", "[Select]")
                                   make_column<&RecordWithOptionals::id>("id"),
                                   make_column<&RecordWithOptionals::i>("i"),
                                   make_column<&RecordWithOptionals::s>("s"));
+  auto table_records_with_time =
+      make_table("records_with_time",
+                 make_column<&RecordWithTime::id>("id"),
+                 make_column<&RecordWithTime::time>("time"));
   auto d = make_database("localhost",
                          3306,
                          "mysql_orm_test",
                          "",
                          "mysql_orm_test_db",
-                         table_records);
+                         table_records,
+                         table_records_with_time);
   d.recreate();
   d.execute(
       "INSERT INTO `optional_records` (`id`, `i`, `s`) VALUES "
       R"((1, 1, "one"),)"
       R"((2, 2, "two"),)"
       R"((3, 4, "four"))");
+  d.execute(
+      "INSERT INTO `records_with_time` (`id`, `time`) VALUES (1, '2018-01-02 "
+      "03:04:05')");
 
   SECTION("One row")
   {
@@ -121,5 +129,15 @@ TEST_CASE("[Select] Select with optionals", "[Select]")
     CHECK(res[0] == RecordWithOptionals{1, 1, "one"});
     CHECK(res[1] == RecordWithOptionals{2, 2, "two"});
     CHECK(res[2] == RecordWithOptionals{3, 4, "four"});
+  }
+
+  SECTION("With time")
+  {
+    auto const res = d.select<RecordWithTime>()();
+    static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
+                                 std::vector<RecordWithTime>>,
+                  "Wrong return type");
+    REQUIRE(res.size() == 1);
+    CHECK(res[0] == RecordWithTime{1, makeTm(2018, 1, 2, 3, 4, 5)});
   }
 }

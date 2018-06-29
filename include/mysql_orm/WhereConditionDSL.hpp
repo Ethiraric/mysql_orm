@@ -10,38 +10,6 @@
 
 namespace mysql_orm
 {
-namespace details
-{
-inline MYSQL_TIME toMySQLTime(std::tm const& tm) noexcept
-{
-  auto ret = MYSQL_TIME{};
-  // tm_year is the number of years since 1900.
-  ret.year = tm.tm_year + 1900;
-  // January is 0
-  ret.month = tm.tm_mon + 1;
-  ret.day = tm.tm_mday;
-  ret.hour = tm.tm_hour;
-  ret.minute = tm.tm_min;
-  ret.second = tm.tm_sec;
-  return ret;
-}
-
-inline std::tm fromMySQLTime(MYSQL_TIME const& time) noexcept
-{
-  auto ret = std::tm{};
-  // c.f.: toMySQLTime
-  ret.tm_year = time.year - 1900;
-  ret.tm_mon = time.month - 1;
-  ret.tm_mday = time.day;
-  ret.tm_hour = time.hour;
-  ret.tm_min = time.minute;
-  ret.tm_sec = time.second;
-  ret.tm_isdst = -1;
-  std::mktime(&ret);
-  return ret;
-}
-}
-
 enum class OperatorType
 {
   Equals,
@@ -106,6 +74,10 @@ struct AssignmentList
     this->tail.bindInTo(binds, idx + head.getNbInputSlots());
   }
 
+  void rebindStdTmReferences(InputBindArray&, std::size_t) const noexcept
+  {
+  }
+
   Head head;
   Tail tail;
 };
@@ -141,6 +113,10 @@ struct Assignment
     this->rhs.bindInTo(binds, idx + lhs.getNbInputSlots());
   }
 
+  void rebindStdTmReferences(InputBindArray&, std::size_t) const noexcept
+  {
+  }
+
   Lhs lhs;
   Rhs rhs;
 };
@@ -168,6 +144,10 @@ struct OperandWrapper
     binds.bind(idx, this->value);
   }
 
+  void rebindStdTmReferences(InputBindArray&, std::size_t) const noexcept
+  {
+  }
+
   T value;
 };
 
@@ -187,6 +167,11 @@ struct ref
   }
 
   void bindInTo(InputBindArray& binds, std::size_t idx) const noexcept
+  {
+    binds.bind(idx, this->value.get());
+  }
+
+  void rebindStdTmReferences(InputBindArray& binds, std::size_t idx) const noexcept
   {
     binds.bind(idx, this->value.get());
   }
@@ -217,6 +202,12 @@ struct OperatorClosure
   {
     this->lhs.bindInTo(binds, idx);
     this->rhs.bindInTo(binds, idx + lhs.getNbInputSlots());
+  }
+
+  void rebindStdTmReferences(InputBindArray& binds, std::size_t idx) const noexcept
+  {
+    this->lhs.rebindStdTmReferences(binds, idx);
+    this->rhs.rebindStdTmReferences(binds, idx + lhs.getNbInputSlots());
   }
 
 #define MAKE_OPERATORS(op, optype)                                            \
@@ -252,6 +243,10 @@ struct c
   }
 
   void bindInTo(InputBindArray&, std::size_t) const noexcept
+  {
+  }
+
+  void rebindStdTmReferences(InputBindArray&, std::size_t) const noexcept
   {
   }
 

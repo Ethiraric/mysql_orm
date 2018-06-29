@@ -97,6 +97,10 @@ public:
   {
   }
 
+  void rebindStdTmReferences(InputBindArray&) const noexcept
+  {
+  }
+
   void finalizeBindings(model_type& model, OutputBindArray& binds)
   {
     auto i = std::size_t{0};

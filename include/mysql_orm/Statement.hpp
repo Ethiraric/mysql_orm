@@ -103,6 +103,7 @@ private:
 
   void sql_execute()
   {
+    this->rebindStdTmReferences();
     auto* mysql_out_binds = const_cast<MYSQL_BIND*>(this->out_binds.data());
     auto* mysql_in_binds = const_cast<MYSQL_BIND*>(this->in_binds.data());
     if ((!this->out_binds.empty() &&
@@ -114,6 +115,11 @@ private:
     if (mysql_stmt_execute(this->stmt.get()))
       throw MySQLException("Failed to execute statement: " +
                            std::string{mysql_stmt_error(this->stmt.get())});
+  }
+
+  void rebindStdTmReferences()
+  {
+    this->orm_query.rebindStdTmReferences(this->in_binds);
   }
 
   MYSQL* mysql_handle;

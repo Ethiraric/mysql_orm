@@ -97,6 +97,12 @@ public:
     this->condition.bindInTo(binds, this->query.getNbInputSlots());
   }
 
+  void rebindStdTmReferences(InputBindArray& ins) const noexcept
+  {
+    this->query.rebindStdTmReferences(ins);
+    this->condition.rebindStdTmReferences(ins, this->query.getNbInputSlots());
+  }
+
 protected:
   // May not be nullptr. Can't use std::reference_wrapper since MYSQL is
   // incomplete.

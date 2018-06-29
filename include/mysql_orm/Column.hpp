@@ -1,6 +1,7 @@
 #ifndef MYSQL_ORM_COLUMN_HPP_
 #define MYSQL_ORM_COLUMN_HPP_
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -45,6 +46,8 @@ constexpr char const* getFieldSQLType()
     else if constexpr (std::is_same_v<Field, uint64_t>)
       return "BIGINT UNSIGNED";
   }
+  else if constexpr (std::is_same_v<Field, std::tm>)
+    return "DATETIME";
 }
 
 /** A Column in a table.

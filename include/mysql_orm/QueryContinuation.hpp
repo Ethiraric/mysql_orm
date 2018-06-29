@@ -29,6 +29,8 @@ namespace mysql_orm
  *     parents) needs.
  *   - `bindInTo`: Binds input slots of the class (and parents).
  *   - `bindOutTo`: Binds output slots of the class (and parents).
+ *   - `rebindStdTmReferences`: Re-convert `std::tm`s to `MYSQL_TIME` for
+ *     references that might have been updated in DSLs.
  *   - `finalizeBindings`: Performs last-minute operations on fields before
  *     copying.
  *
@@ -95,6 +97,11 @@ public:
     this->query.bindOutTo(model, binds);
   }
 
+  void rebindStdTmReferences(InputBindArray& ins) const noexcept
+  {
+    this->rebindStdTmReferencesImpl(*this, ins, 0);
+  }
+
   void finalizeBindings(model_type& model, OutputBindArray& binds)
   {
     this->query.finalizeBindings(model, binds);
@@ -128,6 +135,22 @@ private:
   static void bindInToImpl(Q const& q, InputBindArray& binds, long) noexcept
   {
     q.query.bindInTo(binds);
+  }
+
+  template <typename Q>
+  static auto rebindStdTmReferencesImpl(Q const& q,
+                                        InputBindArray& ins,
+                                        int) noexcept
+      -> decltype(q.Continuation::rebindStdTmReferences(ins), void())
+  {
+    q.Continuation::rebindStdTmReferences(ins);
+  }
+  template <typename Q>
+  static void rebindStdTmReferencesImpl(Q const& q,
+                                        InputBindArray& ins,
+                                        long) noexcept
+  {
+    q.query.rebindStdTmReferences(ins);
   }
 };
 

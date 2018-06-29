@@ -1,6 +1,7 @@
 #ifndef MYSQL_ORM_BINDARRAY_HPP_
 #define MYSQL_ORM_BINDARRAY_HPP_
 
+#include <chrono>
 #include <cstring>
 #include <type_traits>
 #include <vector>
@@ -26,6 +27,35 @@ constexpr enum_field_types getMySQLIntegralFieldType()
   else if constexpr (sizeof(T) == 8)
     return MYSQL_TYPE_LONGLONG;
 }
+
+inline MYSQL_TIME toMySQLTime(std::tm const& tm) noexcept
+{
+  auto ret = MYSQL_TIME{};
+  // tm_year is the number of years since 1900.
+  ret.year = tm.tm_year + 1900;
+  // January is 0
+  ret.month = tm.tm_mon + 1;
+  ret.day = tm.tm_mday;
+  ret.hour = tm.tm_hour;
+  ret.minute = tm.tm_min;
+  ret.second = tm.tm_sec;
+  return ret;
+}
+
+inline std::tm fromMySQLTime(MYSQL_TIME const& time) noexcept
+{
+  auto ret = std::tm{};
+  // c.f.: toMySQLTime
+  ret.tm_year = time.year - 1900;
+  ret.tm_mon = time.month - 1;
+  ret.tm_mday = time.day;
+  ret.tm_hour = time.hour;
+  ret.tm_min = time.minute;
+  ret.tm_sec = time.second;
+  ret.tm_isdst = -1;
+  std::mktime(&ret);
+  return ret;
+}
 }
 
 /** Managed array of input `MYSQL_BIND`s.
@@ -43,7 +73,12 @@ public:
 
   InputBindArray(InputBindArray const& b) = default;
   InputBindArray(InputBindArray&& b) noexcept = default;
-  ~InputBindArray() noexcept = default;
+  ~InputBindArray() noexcept
+  {
+    for (auto& bind : this->binds)
+      if (bind.buffer_type == MYSQL_TYPE_DATETIME)
+        delete reinterpret_cast<MYSQL_TIME*>(bind.buffer);
+  }
 
   InputBindArray& operator=(InputBindArray const& rhs) = default;
   InputBindArray& operator=(InputBindArray&& rhs) noexcept = default;
@@ -60,7 +95,7 @@ public:
                       std::is_same_v<column_data_t, char*> ||
                       std::is_same_v<column_data_t, char const*> ||
                       std::is_integral_v<column_data_t> ||
-                      std::is_same_v<column_data_t, MYSQL_TIME>,
+                      std::is_same_v<column_data_t, std::tm>,
                   "Unknown type");
     if constexpr (std::is_same_v<column_data_t, std::string>)
     {
@@ -82,6 +117,14 @@ public:
           details::getMySQLIntegralFieldType<column_data_t>();
       mysql_bind.buffer = const_cast<column_data_t*>(&value);
       mysql_bind.buffer_length = sizeof(value);
+    }
+    else if constexpr (std::is_same_v<column_data_t, std::tm>)
+    {
+      auto* time = new MYSQL_TIME{};
+      *time = details::toMySQLTime(value);
+      mysql_bind.buffer_type = MYSQL_TYPE_DATETIME;
+      mysql_bind.buffer = time;
+      mysql_bind.buffer_length = sizeof(MYSQL_TIME);
     }
   }
 
@@ -124,7 +167,12 @@ public:
 
   OutputBindArray(OutputBindArray const& b) = default;
   OutputBindArray(OutputBindArray&& b) noexcept = default;
-  ~OutputBindArray() noexcept = default;
+  ~OutputBindArray() noexcept
+  {
+    for (auto& bind : this->binds)
+      if (bind.buffer_type == MYSQL_TYPE_DATETIME)
+        delete reinterpret_cast<MYSQL_TIME*>(bind.buffer);
+  }
 
   OutputBindArray& operator=(OutputBindArray const& rhs) = default;
   OutputBindArray& operator=(OutputBindArray&& rhs) noexcept = default;
@@ -153,7 +201,7 @@ public:
     static_assert(std::is_same_v<column_data_t, std::string> ||
                       std::is_same_v<column_data_t, char*> ||
                       std::is_integral_v<column_data_t> ||
-                      std::is_same_v<column_data_t, MYSQL_TIME>,
+                      std::is_same_v<column_data_t, std::tm>,
                   "Unknown type");
     if constexpr (std::is_same_v<column_data_t, std::string>)
     {
@@ -179,6 +227,13 @@ public:
       mysql_bind.buffer = &attr;
       mysql_bind.buffer_length = sizeof(attr);
     }
+    else if constexpr(std::is_same_v<column_data_t, std::tm>)
+    {
+      auto* time = new MYSQL_TIME{};
+      mysql_bind.buffer_type = MYSQL_TYPE_DATETIME;
+      mysql_bind.buffer = time;
+      mysql_bind.buffer_length = sizeof(MYSQL_TIME);
+    }
   }
 
   template <typename T>
@@ -199,7 +254,8 @@ public:
     }();
     static_assert(std::is_same_v<column_data_t, std::string> ||
                       std::is_same_v<column_data_t, char*> ||
-                      std::is_integral_v<column_data_t>,
+                      std::is_integral_v<column_data_t> ||
+                      std::is_same_v<column_data_t, std::tm>,
                   "Unknown type");
 
     if constexpr (is_optional)
@@ -226,6 +282,11 @@ public:
       newtab[length] = '\0';
       delete[] attr;
       attr = newtab;
+    }
+    else if constexpr (std::is_same_v<column_data_t, std::tm>)
+    {
+      attr = details::fromMySQLTime(
+          *reinterpret_cast<MYSQL_TIME*>(this->binds[idx].buffer));
     }
     else
       (void)(idx);

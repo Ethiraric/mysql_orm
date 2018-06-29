@@ -69,6 +69,10 @@ public:
     (binds.bind(i++, model.*Attrs), ...);
   }
 
+  void rebindStdTmReferences(InputBindArray&) const noexcept
+  {
+  }
+
 private:
   // May not be nullptr. Can't use std::reference_wrapper since MYSQL is
   // incomplete.
