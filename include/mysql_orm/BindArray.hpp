@@ -56,6 +56,14 @@ inline std::tm fromMySQLTime(MYSQL_TIME const& time) noexcept
   std::mktime(&ret);
   return ret;
 }
+
+// This just frees the contents and does not reinitialize it.
+// You cannot call it twice in a row with the same bind.
+inline void freeBindIfTime(MYSQL_BIND& bind)
+{
+  if (bind.buffer_type == MYSQL_TYPE_DATETIME)
+    delete reinterpret_cast<MYSQL_TIME*>(bind.buffer);
+}
 }
 
 /** Managed array of input `MYSQL_BIND`s.
@@ -76,8 +84,7 @@ public:
   ~InputBindArray() noexcept
   {
     for (auto& bind : this->binds)
-      if (bind.buffer_type == MYSQL_TYPE_DATETIME)
-        delete reinterpret_cast<MYSQL_TIME*>(bind.buffer);
+      details::freeBindIfTime(bind);
   }
 
   InputBindArray& operator=(InputBindArray const& rhs) = default;
@@ -91,6 +98,7 @@ public:
         std::conditional_t<is_optional, meta::LiftOptional_t<T>, T>;
 
     auto& mysql_bind = this->binds[idx];
+    details::freeBindIfTime(mysql_bind);
     static_assert(std::is_same_v<column_data_t, std::string> ||
                       std::is_same_v<column_data_t, char*> ||
                       std::is_same_v<column_data_t, char const*> ||
@@ -170,8 +178,7 @@ public:
   ~OutputBindArray() noexcept
   {
     for (auto& bind : this->binds)
-      if (bind.buffer_type == MYSQL_TYPE_DATETIME)
-        delete reinterpret_cast<MYSQL_TIME*>(bind.buffer);
+      details::freeBindIfTime(bind);
   }
 
   OutputBindArray& operator=(OutputBindArray const& rhs) = default;
@@ -198,6 +205,7 @@ public:
         return field;
     }();
     auto& mysql_bind = this->binds[idx];
+    details::freeBindIfTime(mysql_bind);
     static_assert(std::is_same_v<column_data_t, std::string> ||
                       std::is_same_v<column_data_t, char*> ||
                       std::is_integral_v<column_data_t> ||

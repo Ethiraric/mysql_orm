@@ -44,18 +44,27 @@ TEST_CASE("[Where] Simple Where", "[Where]")
                                   make_column<&Record::id>("id"),
                                   make_column<&Record::i>("i"),
                                   make_column<&Record::s>("s"));
+  auto table_records_with_time =
+      make_table("records_with_time",
+                 make_column<&RecordWithTime::id>("id"),
+                 make_column<&RecordWithTime::time>("time"));
   auto d = make_database("localhost",
                          3306,
                          "mysql_orm_test",
                          "",
                          "mysql_orm_test_db",
-                         table_records);
+                         table_records,
+                         table_records_with_time);
   d.recreate();
   d.execute(
       "INSERT INTO `records` (`id`, `i`, `s`) VALUES "
       R"((1, 1, "one"),)"
       R"((2, 2, "two"),)"
       R"((3, 4, "four"))");
+  d.execute(
+      "INSERT INTO `records_with_time` (`id`, `time`) VALUES "
+      "(1, '2018-01-02 03:04:05'), "
+      "(2, '2018-03-02 03:04:05')");
 
   SECTION("With value")
   {
@@ -107,7 +116,7 @@ TEST_CASE("[Where] Simple Where", "[Where]")
         "Wrong return type");
     REQUIRE(res.size() == 1);
     CHECK(res[0] == Record{4, 1, "one"});
-}
+  }
 
   SECTION("Raw char const* string")
   {
@@ -120,5 +129,24 @@ TEST_CASE("[Where] Simple Where", "[Where]")
         "Wrong return type");
     REQUIRE(res.size() == 1);
     CHECK(res[0] == Record{1, 1, "one"});
-}
+  }
+
+  SECTION("With time")
+  {
+    auto const res = d.select<RecordWithTime>()(
+        Where{c<&RecordWithTime::time>{} == makeTm(2018, 1, 2, 3, 4, 5)})();
+    REQUIRE(res.size() == 1);
+    CHECK(res[0] == RecordWithTime{1, makeTm(2018, 1, 2, 3, 4, 5)});
+  }
+
+  SECTION("With time reference")
+  {
+    auto time = makeTm(2018, 1, 2, 3, 4, 5);
+    auto query = d.select<RecordWithTime>()(
+        Where{c<&RecordWithTime::time>{} == ref{time}});
+    time = makeTm(2018, 3, 2, 3, 4, 5);
+    auto const res = query();
+    REQUIRE(res.size() == 1);
+    CHECK(res[0] == RecordWithTime{2, time});
+  }
 }
