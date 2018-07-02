@@ -157,7 +157,7 @@ public:
   }
 
 private:
-  std::string const column_name;
+  std::string column_name;
   ColumnConstraints tags;
 };
 
