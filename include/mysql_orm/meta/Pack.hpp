@@ -80,6 +80,81 @@ struct FilterPack<Filter, Pack<>>
 
 template <template <typename> typename Filter, typename ZePack>
 using FilterPack_t = typename FilterPack<Filter, ZePack>::type;
+
+/** Empty struct. Used to manipulate template parameter packs.
+ */
+template <auto... Vs>
+struct ValuePack
+{
+  static inline constexpr auto size = sizeof...(Vs);
+};
+
+/** Merges values from both packs into another third pack.
+ */
+template <typename P1, typename P2>
+struct MergeValuePacks;
+
+template <auto... Vs, auto... Ws>
+struct MergeValuePacks<ValuePack<Vs...>, ValuePack<Ws...>>
+{
+  using type = ValuePack<Vs..., Ws...>;
+};
+
+template <typename P1, typename P2>
+using MergeValuePacks_t = typename MergeValuePacks<P1, P2>::type;
+
+/** Append a type at the end of a pack.
+ */
+template <typename ZeValuePack, auto V>
+struct AppendValuePack;
+
+template <auto... Vs, auto V>
+struct AppendValuePack<ValuePack<Vs...>, V>
+{
+  using type = ValuePack<Vs..., V>;
+};
+
+template <typename ZeValuePack, auto V>
+using AppendValuePack_t = typename AppendValuePack<ZeValuePack, V>::type;
+
+/** Prepend a type at the beginning of a pack.
+ */
+template <typename ZeValuePack, auto V>
+struct PrependValuePack;
+
+template <auto... Vs, auto V>
+struct PrependValuePack<ValuePack<Vs...>, V>
+{
+  using type = ValuePack<V, Vs...>;
+};
+
+template <typename ZeValuePack, auto V>
+using PrependValuePack_t = typename PrependValuePack<ZeValuePack, V>::type;
+
+/** Filter the types inside a pack.
+ */
+template <template <auto> typename Predicate, typename ZeValuePack>
+struct FilterValuePack;
+
+template <template <auto> typename Filter, auto V, auto... Vs>
+struct FilterValuePack<Filter, ValuePack<V, Vs...>>
+  : std::conditional<
+        Filter<V>::value,
+        typename PrependValuePack<
+            typename FilterValuePack<Filter, ValuePack<Vs...>>::type,
+            V>::type,
+        typename FilterValuePack<Filter, ValuePack<Vs...>>::type>
+{
+};
+
+template <template <auto> typename Filter>
+struct FilterValuePack<Filter, ValuePack<>>
+{
+  using type = ValuePack<>;
+};
+
+template <template <auto> typename Filter, typename ZeValuePack>
+using FilterValuePack_t = typename FilterValuePack<Filter, ZeValuePack>::type;
 }
 }
 
