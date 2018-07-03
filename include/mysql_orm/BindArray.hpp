@@ -96,8 +96,25 @@ public:
     constexpr auto is_optional = meta::IsOptional_v<T>;
     using column_data_t =
         std::conditional_t<is_optional, meta::LiftOptional_t<T>, T>;
-
     auto& mysql_bind = this->binds[idx];
+
+    if constexpr (is_optional)
+    {
+      if (!value)
+      {
+        mysql_bind.buffer = nullptr;
+        mysql_bind.buffer_length = 0;
+        return;
+      }
+    }
+
+    auto& attr = [&]() -> auto&
+    {
+      if constexpr (is_optional)
+        return *value;
+      else
+        return value;
+    }();
     details::freeBindIfTime(mysql_bind);
     static_assert(std::is_same_v<column_data_t, std::string> ||
                       std::is_same_v<column_data_t, char*> ||
@@ -108,28 +125,28 @@ public:
     if constexpr (std::is_same_v<column_data_t, std::string>)
     {
       mysql_bind.buffer_type = MYSQL_TYPE_STRING;
-      mysql_bind.buffer = const_cast<char*>(value.data());
-      mysql_bind.buffer_length = value.size();
+      mysql_bind.buffer = const_cast<char*>(attr.data());
+      mysql_bind.buffer_length = attr.size();
     }
     else if constexpr (std::is_same_v<column_data_t, char*> ||
                        std::is_same_v<column_data_t, char const*>)
     {
       mysql_bind.buffer_type = MYSQL_TYPE_STRING;
-      mysql_bind.buffer = const_cast<char*>(value);
-      mysql_bind.buffer_length = strlen(value);
+      mysql_bind.buffer = const_cast<char*>(attr);
+      mysql_bind.buffer_length = strlen(attr);
     }
     else if constexpr (std::is_integral_v<column_data_t>)
     {
       mysql_bind.is_unsigned = std::is_unsigned_v<column_data_t>;
       mysql_bind.buffer_type =
           details::getMySQLIntegralFieldType<column_data_t>();
-      mysql_bind.buffer = const_cast<column_data_t*>(&value);
-      mysql_bind.buffer_length = sizeof(value);
+      mysql_bind.buffer = const_cast<column_data_t*>(&attr);
+      mysql_bind.buffer_length = sizeof(attr);
     }
     else if constexpr (std::is_same_v<column_data_t, std::tm>)
     {
       auto* time = new MYSQL_TIME{};
-      *time = details::toMySQLTime(value);
+      *time = details::toMySQLTime(attr);
       mysql_bind.buffer_type = MYSQL_TYPE_DATETIME;
       mysql_bind.buffer = time;
       mysql_bind.buffer_length = sizeof(MYSQL_TIME);
