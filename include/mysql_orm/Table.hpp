@@ -16,6 +16,8 @@
 #include <mysql_orm/Utils.hpp>
 #include <mysql_orm/meta/ColumnAttributeGetter.hpp>
 #include <mysql_orm/meta/FindMapped.hpp>
+#include <mysql_orm/meta/Pack.hpp>
+#include <mysql_orm/meta/RemoveOccurences.hpp>
 
 namespace mysql_orm
 {
@@ -87,6 +89,16 @@ public:
     return Select<Table, Attrs...>(mysql, *this);
   }
 
+  template <auto... Attrs>
+  auto insertAllBut(MYSQL& mysql, model_type const* model = nullptr) const
+  {
+    using PackType = meta::RemoveValueOccurences_t<
+        meta::ValuePack<
+            meta::MapValue_v<meta::ColumnAttributeGetter, Columns>...>,
+        meta::ValuePack<Attrs...>>;
+    return this->insert(PackType{}, mysql, model);
+  }
+
   /** Returns a query to insert all fields into the table.
    */
   auto insert(MYSQL& mysql, model_type const* model = nullptr) const
@@ -94,6 +106,14 @@ public:
     return Insert<Table,
                   meta::MapValue_v<meta::ColumnAttributeGetter, Columns>...>(
         mysql, *this, model);
+  }
+
+  template <auto... Vs>
+  auto insert(meta::ValuePack<Vs...>,
+              MYSQL& mysql,
+              model_type const* model) const
+  {
+    return this->insert<Vs...>(mysql, model);
   }
 
   /** Returns a query to insert some fields into the table.

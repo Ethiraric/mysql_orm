@@ -112,6 +112,24 @@ public:
         .template insert<Attr, Attrs...>(*this->handle, &model);
   }
 
+  template <auto Attr,
+            auto... Attrs,
+            typename Model = meta::AttributeModelGetter_t<decltype(Attr)>>
+  auto insertAllBut(Model const& model)
+  {
+    static_assert(
+        meta::AllSame_v<meta::AttributeModelGetter_t<decltype(Attr)>,
+                        meta::AttributeModelGetter_t<decltype(Attrs)>...>,
+        "Attributes do not refer to the same model");
+    using Model_t = meta::AttributeModelGetter_t<decltype(Attr)>;
+    using Table_t = typename meta::
+        FindMapped<meta::TableModelGetter, Model_t, Tables...>::type;
+    static_assert(!std::is_same_v<Table_t, void>,
+                  "Failed to find table for model");
+    return std::get<Table_t>(this->tables)
+        .template insertAllBut<Attr, Attrs...>(*this->handle, &model);
+  }
+
   template <typename Model>
   auto update()
   {

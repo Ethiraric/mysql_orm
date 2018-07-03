@@ -88,3 +88,30 @@ TEST_CASE("[Insert] Insert", "[Insert]")
     CHECK(res[1] == RecordWithTime{2, makeTm(2018, 2, 3, 4, 5, 6)});
   }
 }
+
+TEST_CASE("[Insert] insertAllBut buildquery", "[Insert]")
+{
+  auto table_mixed_records = make_table("mixed_records",
+                                        make_column<&MixedRecord::id>("id"),
+                                        make_column<&MixedRecord::i>("i"),
+                                        make_column<&MixedRecord::s>("foo"));
+  auto table_records = make_table("records",
+                                  make_column<&Record::id>("id"),
+                                  make_column<&Record::i>("i"),
+                                  make_column<&Record::s>("s"));
+
+  auto d = make_database("localhost",
+                         3306,
+                         "mysql_orm_test",
+                         "",
+                         "mysql_orm_test_db",
+                         table_mixed_records,
+                         table_records);
+
+  auto mr = MixedRecord{};
+  auto r = Record{};
+  CHECK(d.insertAllBut<&MixedRecord::id>(mr).buildquery() ==
+        "INSERT INTO `mixed_records` (`i`, `foo`) VALUES (?, ?)");
+  CHECK(d.insertAllBut<&Record::i, &Record::s>(r).buildquery() ==
+        "INSERT INTO `records` (`id`) VALUES (?)");
+}
