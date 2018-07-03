@@ -52,11 +52,11 @@ public:
     : mysql_handle{&mysql}, query{std::move(q)}, table{t}, limit{std::move(l)}
   {
   }
-  LimitQueryImpl(LimitQueryImpl const& b) noexcept = default;
+  LimitQueryImpl(LimitQueryImpl const& b) = default;
   LimitQueryImpl(LimitQueryImpl&& b) noexcept = default;
   ~LimitQueryImpl() noexcept = default;
 
-  LimitQueryImpl& operator=(LimitQueryImpl const& rhs) noexcept = default;
+  LimitQueryImpl& operator=(LimitQueryImpl const& rhs) = default;
   LimitQueryImpl& operator=(LimitQueryImpl&& rhs) noexcept = default;
 
   std::stringstream buildqueryss() const

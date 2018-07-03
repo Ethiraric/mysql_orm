@@ -56,19 +56,20 @@ public:
       assignments{std::move(a)}
   {
   }
-  SetQueryImpl(SetQueryImpl const& b) noexcept = default;
+  SetQueryImpl(SetQueryImpl const& b) = default;
   SetQueryImpl(SetQueryImpl&& b) noexcept = default;
   ~SetQueryImpl() noexcept = default;
 
-  SetQueryImpl& operator=(SetQueryImpl const& rhs) noexcept = default;
+  SetQueryImpl& operator=(SetQueryImpl const& rhs) = default;
   SetQueryImpl& operator=(SetQueryImpl&& rhs) noexcept = default;
 
   template <typename Condition>
-  WhereQuery<SetQueryImpl, Table, Condition> operator()(Where<Condition> where)
+  auto operator()(Where<Condition> where)
   {
-    return WhereQuery<SetQueryImpl, Table, Condition>{
+    using ContinuationType = QueryContinuation<Query, Table, SetQueryImpl>;
+    return WhereQuery<ContinuationType, Table, Condition>{
         *this->mysql_handle,
-        *this,
+        static_cast<ContinuationType&>(*this),
         this->table.get(),
         std::move(where.condition)};
   }

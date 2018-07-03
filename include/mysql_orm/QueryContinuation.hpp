@@ -54,11 +54,11 @@ public:
           mysql, std::move(q), t, std::forward<ContinuationArgs>(args)...}
   {
   }
-  QueryContinuation(QueryContinuation const& b) noexcept = default;
+  QueryContinuation(QueryContinuation const& b) = default;
   QueryContinuation(QueryContinuation&& b) noexcept = default;
   ~QueryContinuation() noexcept = default;
 
-  QueryContinuation& operator=(QueryContinuation const& rhs) noexcept = default;
+  QueryContinuation& operator=(QueryContinuation const& rhs) = default;
   QueryContinuation& operator=(QueryContinuation&& rhs) noexcept = default;
 
   template <typename T>

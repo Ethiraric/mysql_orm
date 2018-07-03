@@ -64,11 +64,11 @@ public:
       condition{std::move(c)}
   {
   }
-  WhereQueryImpl(WhereQueryImpl const& b) noexcept = default;
+  WhereQueryImpl(WhereQueryImpl const& b) = default;
   WhereQueryImpl(WhereQueryImpl&& b) noexcept = default;
   ~WhereQueryImpl() noexcept = default;
 
-  WhereQueryImpl& operator=(WhereQueryImpl const& rhs) noexcept = default;
+  WhereQueryImpl& operator=(WhereQueryImpl const& rhs) = default;
   WhereQueryImpl& operator=(WhereQueryImpl&& rhs) noexcept = default;
 
   std::stringstream buildqueryss() const
@@ -80,10 +80,14 @@ public:
   }
 
   template <typename Limit>
-  LimitQuery<WhereQueryImpl, Table, Limit> operator()(Limit limit)
+  auto operator()(Limit limit)
   {
-    return LimitQuery<WhereQueryImpl, Table, Limit>{
-        *this->mysql_handle, *this, this->table.get(), std::move(limit)};
+    using ContinuationType = QueryContinuation<Query, Table, WhereQueryImpl>;
+    return LimitQuery<ContinuationType, Table, Limit>{
+        *this->mysql_handle,
+        static_cast<ContinuationType&>(*this),
+        this->table.get(),
+        std::move(limit)};
   }
 
   size_t getNbInputSlots() const noexcept
