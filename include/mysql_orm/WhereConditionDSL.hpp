@@ -52,7 +52,8 @@ struct AssignmentList
   template <typename Lhs, typename Rhs>
   auto operator,(Assignment<Lhs, Rhs> assignment)
   {
-    return AssignmentList{std::move(assignment), *this};
+    return AssignmentList<Assignment<Lhs, Rhs>, AssignmentList<Head, Tail>>{
+        std::move(assignment), *this};
   }
 
   template <typename Table>

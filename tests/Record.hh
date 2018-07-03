@@ -79,6 +79,27 @@ inline std::ostream& operator<<(std::ostream& out, RecordWithTime const& record)
   return out;
 }
 
+struct LargeRecord
+{
+  mysql_orm::id_t id;
+  int a, b, c, d, e, f, g;
+
+  bool operator==(LargeRecord const& o) const noexcept
+  {
+    return this->id == o.id && this->a == o.a && this->b == o.b &&
+           this->c == o.c && this->d == o.d && this->e == o.e &&
+           this->f == o.f && this->g == o.g;
+  }
+};
+
+inline std::ostream& operator<<(std::ostream& out, LargeRecord const& record)
+{
+  out << "LargeRecord{" << record.id << ',' << record.a << ',' << record.b
+      << ',' << record.c << ',' << record.d << ',' << record.e << ','
+      << record.f << ',' << record.g << '}';
+  return out;
+}
+
 inline std::tm makeTm(int year, int mon, int mday, int hour, int min, int sec)
 {
   auto tm = std::tm{};

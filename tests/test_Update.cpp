@@ -7,11 +7,13 @@
 #include <mysql_orm/Set.hpp>
 #include <mysql_orm/Where.hpp>
 
+using mysql_orm::Autoincrement;
 using mysql_orm::c;
 using mysql_orm::make_column;
 using mysql_orm::make_database;
 using mysql_orm::make_table;
 using mysql_orm::MySQLException;
+using mysql_orm::PrimaryKey;
 using mysql_orm::ref;
 using mysql_orm::Set;
 using mysql_orm::Update;
@@ -46,18 +48,32 @@ TEST_CASE("[Update] Update", "[Update]")
                                   make_column<&Record::id>("id"),
                                   make_column<&Record::i>("i"),
                                   make_column<&Record::s>("s"));
+  auto table_large_records = make_table(
+      "large_records",
+      make_column<&LargeRecord::id>("id", Autoincrement{}, PrimaryKey{}),
+      make_column<&LargeRecord::a>("a"),
+      make_column<&LargeRecord::b>("b"),
+      make_column<&LargeRecord::c>("c"),
+      make_column<&LargeRecord::d>("d"),
+      make_column<&LargeRecord::e>("e"),
+      make_column<&LargeRecord::f>("f"),
+      make_column<&LargeRecord::g>("g"));
   auto d = make_database("localhost",
                          3306,
                          "mysql_orm_test",
                          "",
                          "mysql_orm_test_db",
-                         table_records);
+                         table_records,
+                         table_large_records);
   d.recreate();
   d.execute(
       "INSERT INTO `records` (`id`, `i`, `s`) VALUES "
       R"((1, 1, "one"),)"
       R"((2, 2, "two"),)"
       R"((3, 4, "four"))");
+  d.execute(
+      "INSERT INTO `large_records` (`id`, `a`, `b`, `c`, `d`, `e`, `f`, `g`)"
+      " VALUES (1, 0, 1, 2, 3, 4, 5, 6)");
 
   SECTION("All rows")
   {
@@ -85,5 +101,38 @@ TEST_CASE("[Update] Update", "[Update]")
     CHECK(res[0] == Record{1, 1, "one"});
     CHECK(res[1] == Record{2, 3, "two"});
     CHECK(res[2] == Record{3, 4, "four"});
+  }
+
+  SECTION("Set two columns")
+  {
+    d.update<Record>()(Set{(c<&Record::i>{} = 3, c<&Record::id>() = 4)})(
+         Where{c<&Record::id>() == 2})
+        .build()
+        .execute();
+    auto const res = d.select<Record>().build().execute();
+    static_assert(
+        std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
+        "Wrong return type");
+    REQUIRE(res.size() == 3);
+    CHECK(res[0] == Record{1, 1, "one"});
+    CHECK(res[1] == Record{4, 3, "two"});
+    CHECK(res[2] == Record{3, 4, "four"});
+  }
+
+  SECTION("Set a lot of columns")
+  {
+    d.update<LargeRecord>()(Set{(c<&LargeRecord::a>{} = 1,
+                                 c<&LargeRecord::b>{} = 2,
+                                 c<&LargeRecord::c>{} = 3,
+                                 c<&LargeRecord::d>{} = 4,
+                                 c<&LargeRecord::e>{} = 5,
+                                 c<&LargeRecord::f>{} = 6,
+                                 c<&LargeRecord::g>{} = 7)})();
+    auto const res = d.select<LargeRecord>()();
+    static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
+                                 std::vector<LargeRecord>>,
+                  "Wrong return type");
+    REQUIRE(res.size() == 1);
+    CHECK(res[0] == LargeRecord{1, 1, 2, 3, 4, 5, 6, 7});
   }
 }
