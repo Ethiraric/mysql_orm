@@ -5,12 +5,14 @@
 #include <Record.hh>
 #include <mysql_orm/Database.hpp>
 
+using mysql_orm::Autoincrement;
 using mysql_orm::c;
 using mysql_orm::Limit;
 using mysql_orm::make_column;
 using mysql_orm::make_database;
 using mysql_orm::make_table;
 using mysql_orm::MySQLException;
+using mysql_orm::PrimaryKey;
 using mysql_orm::ref;
 using mysql_orm::Where;
 
@@ -43,14 +45,15 @@ TEST_CASE("[Insert] Insert buildquery", "[Insert]")
 
 TEST_CASE("[Insert] Insert", "[Insert]")
 {
-  auto table_records = make_table("records",
-                                  make_column<&Record::id>("id"),
-                                  make_column<&Record::i>("i"),
-                                  make_column<&Record::s>("s"));
-  auto table_records_with_time =
-      make_table("records_with_time",
-                 make_column<&RecordWithTime::id>("id"),
-                 make_column<&RecordWithTime::time>("time"));
+  auto table_records =
+      make_table("records",
+                 make_column<&Record::id>("id", Autoincrement{}, PrimaryKey{}),
+                 make_column<&Record::i>("i"),
+                 make_column<&Record::s>("s"));
+  auto table_records_with_time = make_table(
+      "records_with_time",
+      make_column<&RecordWithTime::id>("id", Autoincrement{}, PrimaryKey{}),
+      make_column<&RecordWithTime::time>("time"));
   auto d = make_database("localhost",
                          3306,
                          "mysql_orm_test",
@@ -70,7 +73,7 @@ TEST_CASE("[Insert] Insert", "[Insert]")
 
   SECTION("One row")
   {
-    d.insert(Record{4, 8, "eight"})();
+    CHECK(d.insert(Record{4, 8, "eight"})() == 4);
     auto const res = d.select<Record>().build().execute();
     REQUIRE(res.size() == 4);
     CHECK(res[0] == Record{1, 1, "one"});
@@ -81,7 +84,7 @@ TEST_CASE("[Insert] Insert", "[Insert]")
 
   SECTION("Datetime")
   {
-    d.insert(RecordWithTime{2, makeTm(2018, 2, 3, 4, 5, 6)})();
+    CHECK(d.insert(RecordWithTime{2, makeTm(2018, 2, 3, 4, 5, 6)})() == 2);
     auto const res = d.select<RecordWithTime>().build().execute();
     REQUIRE(res.size() == 2);
     CHECK(res[0] == RecordWithTime{1, makeTm(2018, 1, 2, 3, 4, 5)});

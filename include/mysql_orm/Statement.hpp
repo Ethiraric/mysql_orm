@@ -89,7 +89,11 @@ public:
       return ret;
     }
     else
+    {
       this->sql_execute();
+      if constexpr (query_type == QueryType::Insert)
+        return mysql_stmt_insert_id(this->stmt.get());
+    }
   }
 
 private:
