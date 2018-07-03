@@ -12,6 +12,7 @@ set(SRCS
   test_Insert.cpp
   test_Limit.cpp
   test_Pack.cpp
+  test_RemoveOccurences.cpp
   test_Select.cpp
   test_Table.cpp
   test_Update.cpp
