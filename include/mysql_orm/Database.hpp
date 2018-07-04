@@ -72,7 +72,7 @@ public:
                         meta::AttributeModelGetter_t<decltype(Attrs)>...>,
         "Attributes do not refer to the same model");
     using Model_t = meta::AttributeModelGetter_t<decltype(Attr)>;
-    return this->getTable<Model_t>.template select<Attr, Attrs...>(
+    return this->getTable<Model_t>().template select<Attr, Attrs...>(
         *this->handle);
   }
 
