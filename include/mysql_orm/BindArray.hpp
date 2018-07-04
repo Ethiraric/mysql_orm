@@ -298,7 +298,8 @@ public:
       else
         attr.resize(this->length(idx));
     }
-    else if constexpr (std::is_same_v<column_data_t, char*>)
+    else if constexpr (std::is_same_v<column_data_t, char*> ||
+                       std::is_same_v<column_data_t, char const*>)
     {
       auto const length = this->length(idx);
       auto* newtab = new char[length + 1];
