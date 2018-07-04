@@ -61,11 +61,7 @@ public:
   template <typename Model>
   auto select()
   {
-    using Table_t = typename meta::
-        FindMapped<meta::TableModelGetter, Model, Tables...>::type;
-    static_assert(!std::is_same_v<Table_t, void>,
-                  "Failed to find table for model");
-    return std::get<Table_t>(this->tables).select(*this->handle);
+    return this->getTable<Model>().select(*this->handle);
   }
 
   template <auto Attr, auto... Attrs>
@@ -76,22 +72,14 @@ public:
                         meta::AttributeModelGetter_t<decltype(Attrs)>...>,
         "Attributes do not refer to the same model");
     using Model_t = meta::AttributeModelGetter_t<decltype(Attr)>;
-    using Table_t = typename meta::
-        FindMapped<meta::TableModelGetter, Model_t, Tables...>::type;
-    static_assert(!std::is_same_v<Table_t, void>,
-                  "Failed to find table for model");
-    return std::get<Table_t>(this->tables)
-        .template select<Attr, Attrs...>(*this->handle);
+    return this->getTable<Model_t>.template select<Attr, Attrs...>(
+        *this->handle);
   }
 
   template <typename Model>
   auto insert(Model const& model)
   {
-    using Table_t = typename meta::
-        FindMapped<meta::TableModelGetter, Model, Tables...>::type;
-    static_assert(!std::is_same_v<Table_t, void>,
-                  "Failed to find table for model");
-    return std::get<Table_t>(this->tables).insert(*this->handle, &model);
+    return this->getTable<Model>().insert(*this->handle, &model);
   }
 
   template <auto Attr,
@@ -104,12 +92,8 @@ public:
                         meta::AttributeModelGetter_t<decltype(Attrs)>...>,
         "Attributes do not refer to the same model");
     using Model_t = meta::AttributeModelGetter_t<decltype(Attr)>;
-    using Table_t = typename meta::
-        FindMapped<meta::TableModelGetter, Model_t, Tables...>::type;
-    static_assert(!std::is_same_v<Table_t, void>,
-                  "Failed to find table for model");
-    return std::get<Table_t>(this->tables)
-        .template insert<Attr, Attrs...>(*this->handle, &model);
+    return this->getTable<Model_t>().template insert<Attr, Attrs...>(
+        *this->handle, &model);
   }
 
   template <auto Attr,
@@ -122,11 +106,7 @@ public:
                         meta::AttributeModelGetter_t<decltype(Attrs)>...>,
         "Attributes do not refer to the same model");
     using Model_t = meta::AttributeModelGetter_t<decltype(Attr)>;
-    using Table_t = typename meta::
-        FindMapped<meta::TableModelGetter, Model_t, Tables...>::type;
-    static_assert(!std::is_same_v<Table_t, void>,
-                  "Failed to find table for model");
-    return std::get<Table_t>(this->tables)
+    return this->getTable<Model_t>()
         .template insertAllBut<Attr, Attrs...>(*this->handle, &model);
   }
 
@@ -150,6 +130,16 @@ public:
   }
 
 private:
+  template <typename Model>
+  auto& getTable()
+  {
+    using Table_t = typename meta::
+        FindMapped<meta::TableModelGetter, Model, Tables...>::type;
+    static_assert(!std::is_same_v<Table_t, void>,
+                  "Failed to find table for model");
+    return std::get<Table_t>(this->tables);
+  }
+
   std::unique_ptr<MYSQL, decltype(&mysql_close)> handle;
   std::tuple<Tables...> tables;
 };
