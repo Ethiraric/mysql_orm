@@ -129,6 +129,43 @@ public:
     });
   }
 
+  template <typename Model>
+  void recreate()
+  {
+    auto& table = this->getTable<Model>();
+    this->execute("DROP TABLE IF EXISTS `" + table.getName() + '`');
+    this->execute(table.getSchema());
+  }
+
+  void create()
+  {
+    for_each_tuple(this->tables, [&](auto const& table) {
+      this->execute(table.getSchema());
+    });
+  }
+
+  template <typename Model>
+  void create()
+  {
+    auto& table = this->getTable<Model>();
+    this->execute(table.getSchema());
+  }
+
+  void drop()
+  {
+    // TODO(ethiraric): Merge these into one single query.
+    for_each_tuple(this->tables, [&](auto const& table) {
+      this->execute("DROP TABLE IF EXISTS `" + table.getName() + '`');
+    });
+  }
+
+  template <typename Model>
+  void drop()
+  {
+    auto& table = this->getTable<Model>();
+    this->execute("DROP TABLE IF EXISTS `" + table.getName() + '`');
+  }
+
 private:
   template <typename Model>
   auto& getTable()
