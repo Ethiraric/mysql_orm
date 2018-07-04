@@ -9,6 +9,8 @@
 
 #include <mysql_orm/ColumnConstraints.hpp>
 #include <mysql_orm/meta/AttributePtrDissector.hpp>
+#include <mysql_orm/meta/IsOptional.hpp>
+#include <mysql_orm/meta/LiftOptional.hpp>
 
 namespace mysql_orm
 {
@@ -74,13 +76,15 @@ class Column
 public:
   using model_type = Model;
   using field_type = Field;
+  using lifted_field_type = meta::LiftOptional_t<Field>;
   static inline constexpr auto attribute = attr;
+  static inline constexpr auto is_optional = meta::IsOptional_v<Field>;
 
   Column(std::string name, ColumnConstraints t = ColumnConstraints{}) noexcept
     : column_name{std::move(name)}, tags{t}
   {
     if (this->tags.nullable == Tristate::Undefined)
-      this->tags.nullable = Tristate::Off;
+      this->tags.nullable = is_optional ? Tristate::On : Tristate::Off;
   }
   Column(Column const& b) = default;
   Column(Column&& b) noexcept = default;
@@ -96,56 +100,8 @@ public:
     auto const tagstr = this->tags.toString();
     auto schema = std::string{};
 
-    schema = '`' + this->column_name + '`' + ' ' + getFieldSQLType<Field>();
-    if (!tagstr.empty())
-      schema += ' ' + tagstr;
-    return schema;
-  }
-
-  std::string const& getName() const noexcept
-  {
-    return this->column_name;
-  }
-
-private:
-  std::string column_name;
-  ColumnConstraints tags;
-};
-
-/** Overload for optional fields.
- *
- * Fields are nullable by default.
- */
-template <typename Model, typename Field, std::optional<Field> Model::*attr>
-class Column<Model, std::optional<Field>, attr>
-{
-public:
-  using model_type = Model;
-  using field_type = Field;
-  static inline constexpr auto attribute = attr;
-
-  explicit Column(std::string name,
-                  ColumnConstraints t = ColumnConstraints{}) noexcept
-    : column_name{std::move(name)}, tags{t}
-  {
-    if (this->tags.nullable == Tristate::Undefined)
-      this->tags.nullable = Tristate::On;
-  }
-  Column(Column const& b) = default;
-  Column(Column&& b) noexcept = default;
-  ~Column() noexcept = default;
-
-  Column& operator=(Column const& rhs) = default;
-  Column& operator=(Column&& rhs) noexcept = default;
-
-  /** Returns the part of the create statement associated with the column.
-   */
-  std::string getSchema() const
-  {
-    auto const tagstr = this->tags.toString();
-    auto schema = std::string{};
-
-    schema = '`' + this->column_name + '`' + ' ' + getFieldSQLType<Field>();
+    schema = '`' + this->column_name + '`' + ' ' +
+             getFieldSQLType<lifted_field_type>();
     if (!tagstr.empty())
       schema += ' ' + tagstr;
     return schema;
