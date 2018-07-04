@@ -14,7 +14,7 @@ namespace meta
 template <typename T>
 struct LiftOptional
 {
-  using type = std::nullopt_t;
+  using type = T;
 };
 
 template <typename T>

@@ -94,8 +94,7 @@ public:
   void bind(std::size_t idx, T const& value)
   {
     constexpr auto is_optional = meta::IsOptional_v<T>;
-    using column_data_t =
-        std::conditional_t<is_optional, meta::LiftOptional_t<T>, T>;
+    using column_data_t = meta::LiftOptional_t<T>;
     auto& mysql_bind = this->binds[idx];
 
     if constexpr (is_optional)
