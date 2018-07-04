@@ -10,6 +10,7 @@ using PrimaryKey = mysql_orm::PrimaryKey;
 using Autoincrement = mysql_orm::Autoincrement;
 using NotNull = mysql_orm::NotNull;
 using Nullable = mysql_orm::Nullable;
+using Unique = mysql_orm::Unique;
 
 TEST_CASE("Create fields", "[Column]")
 {
@@ -64,6 +65,13 @@ TEST_CASE("Create fields", "[Column]")
           "id", PrimaryKey{}, Autoincrement{});
       REQUIRE(c.getSchema() ==
               "`id` INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT");
+    }
+
+    SECTION("Unique")
+    {
+      auto c = mysql_orm::make_column<&MixedRecord::id>(
+          "id", Unique{});
+      REQUIRE(c.getSchema() == "`id` INTEGER UNSIGNED UNIQUE NOT NULL");
     }
 
     SECTION("Nullable non-optional")

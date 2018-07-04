@@ -42,6 +42,8 @@ struct ColumnConstraints
       dst += app;
     };
 
+    if (this->unique)
+      add_word(ret, "UNIQUE");
     if (this->nullable == Tristate::Off)
       add_word(ret, "NOT NULL");
     if (this->primary_key)
@@ -54,6 +56,7 @@ struct ColumnConstraints
   Tristate nullable{Tristate::Undefined};
   bool primary_key{false};
   bool auto_increment{false};
+  bool unique{false};
 
 private:
   constexpr void apply()
@@ -109,6 +112,17 @@ struct Autoincrement
     if (tags.auto_increment)
       throw std::runtime_error("Autoincrement specified multiple times");
     tags.auto_increment = true;
+  }
+};
+
+struct Unique
+{
+  template <typename Constraints>
+  constexpr void operator()(Constraints& tags)
+  {
+    if (tags.unique)
+      throw std::runtime_error("Unique specified multiple times");
+    tags.unique = true;
   }
 };
 }
