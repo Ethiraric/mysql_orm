@@ -147,7 +147,8 @@ auto make_varchar(std::string name, Tags... tagattributes)
   using attribute_t =
       typename meta::AttributePtrDissector<decltype(AttributePtr)>::attribute_t;
   constexpr auto tags = ColumnConstraints{tagattributes...};
-  return Column<class_t, attribute_t, AttributePtr>{std::move(name), tags};
+  return Column<class_t, attribute_t, AttributePtr, varchar_size>{
+      std::move(name), tags};
 }
 
 template <auto AttributePtr, typename... Tags>

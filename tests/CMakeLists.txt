@@ -16,6 +16,7 @@ set(SRCS
   test_Select.cpp
   test_Table.cpp
   test_Update.cpp
+  test_Varchar.cpp
   test_Where.cpp
 )
 
