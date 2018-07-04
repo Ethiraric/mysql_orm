@@ -90,7 +90,10 @@ public:
   void bindOutTo(model_type& model, OutputBindArray& binds) const
   {
     auto i = std::size_t{0};
-    (binds.bind(i++, model.*Attrs), ...);
+    (binds.bind<std::remove_reference_t<decltype(
+         table.get().template getColumn<Attrs>())>::varchar_size>(i++,
+                                                                  model.*Attrs),
+     ...);
   }
 
   void bindInTo(InputBindArray&) const noexcept

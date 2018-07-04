@@ -200,7 +200,7 @@ public:
   OutputBindArray& operator=(OutputBindArray const& rhs) = default;
   OutputBindArray& operator=(OutputBindArray&& rhs) noexcept = default;
 
-  template <typename T>
+  template <std::size_t varchar_size, typename T>
   void bind(std::size_t idx, T& value)
   {
     using attribute_t = T;
@@ -230,18 +230,20 @@ public:
     if constexpr (std::is_same_v<column_data_t, std::string>)
     {
       // XXX(ethiraric): Find a way to correctly allocate it.
-      attr.resize(65536);
+      constexpr auto buffer_size = varchar_size > 0 ? varchar_size : 65536;
+      attr.resize(buffer_size);
       mysql_bind.buffer_type = MYSQL_TYPE_STRING;
       mysql_bind.buffer = &attr[0];
-      mysql_bind.buffer_length = 65536;
+      mysql_bind.buffer_length = buffer_size;
     }
     else if constexpr (std::is_same_v<column_data_t, char*>)
     {
       // XXX(ethiraric): Find a way to correctly allocate it.
-      attr = new char[65536];
+      constexpr auto buffer_size = varchar_size > 0 ? varchar_size : 65536;
+      attr = new char[buffer_size];
       mysql_bind.buffer_type = MYSQL_TYPE_STRING;
       mysql_bind.buffer = attr;
-      mysql_bind.buffer_length = 65536;
+      mysql_bind.buffer_length = buffer_size;
     }
     else if constexpr (std::is_integral_v<column_data_t>)
     {

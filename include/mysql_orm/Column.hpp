@@ -70,7 +70,10 @@ constexpr char const* getFieldSQLType()
  *
  * TODO(ethiraric): This class might be `constexpr`'d?
  */
-template <typename Model, typename Field, Field Model::*attr>
+template <typename Model,
+          typename Field,
+          Field Model::*attr,
+          std::size_t VARCHAR_SIZE = 0>
 class Column
 {
 public:
@@ -79,10 +82,16 @@ public:
   using lifted_field_type = meta::LiftOptional_t<Field>;
   static inline constexpr auto attribute = attr;
   static inline constexpr auto is_optional = meta::IsOptional_v<Field>;
+  static inline constexpr auto varchar_size = VARCHAR_SIZE;
 
   Column(std::string name, ColumnConstraints t = ColumnConstraints{}) noexcept
     : column_name{std::move(name)}, tags{t}
   {
+    if constexpr (varchar_size > 0 &&
+                  !(std::is_same_v<lifted_field_type, std::string> ||
+                    std::is_same_v<lifted_field_type, char*> ||
+                    std::is_same_v<lifted_field_type, char const*>))
+      throw std::runtime_error("VARCHAR can only be used for text types");
     if (this->tags.nullable == Tristate::Undefined)
       this->tags.nullable = is_optional ? Tristate::On : Tristate::Off;
   }
@@ -100,8 +109,11 @@ public:
     auto const tagstr = this->tags.toString();
     auto schema = std::string{};
 
-    schema = '`' + this->column_name + '`' + ' ' +
-             getFieldSQLType<lifted_field_type>();
+    schema = '`' + this->column_name + '`' + ' ';
+    if constexpr (varchar_size > 0)
+      schema += "VARCHAR(" + std::to_string(varchar_size) + ')';
+    else
+      schema += getFieldSQLType<lifted_field_type>();
     if (!tagstr.empty())
       schema += ' ' + tagstr;
     return schema;
@@ -117,15 +129,18 @@ private:
   ColumnConstraints tags;
 };
 
-/** Helper function to create a column.
+/** Helper functions to create a column.
  *
  * Used as `make_column<&Model::Field>("column_name", Autoincrement{},
  * NotNull{})`.
  * The return value is left opaque to the user and should at best be stored in
  * a type-deduced value (`auto`).
+ *
+ * `make_varchar` is used to not store strings as `TEXT` types, but rather as
+ * `VARCHAR`s.
  */
-template <auto AttributePtr, typename... Tags>
-auto make_column(std::string name, Tags... tagattributes)
+template <std::size_t varchar_size, auto AttributePtr, typename... Tags>
+auto make_varchar(std::string name, Tags... tagattributes)
 {
   using class_t =
       typename meta::AttributePtrDissector<decltype(AttributePtr)>::class_t;
@@ -133,6 +148,13 @@ auto make_column(std::string name, Tags... tagattributes)
       typename meta::AttributePtrDissector<decltype(AttributePtr)>::attribute_t;
   constexpr auto tags = ColumnConstraints{tagattributes...};
   return Column<class_t, attribute_t, AttributePtr>{std::move(name), tags};
+}
+
+template <auto AttributePtr, typename... Tags>
+auto make_column(std::string name, Tags... tagattributes)
+{
+  return make_varchar<0, AttributePtr>(std::move(name),
+                                       std::forward<Tags>(tagattributes)...);
 }
 }
 
