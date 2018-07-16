@@ -73,8 +73,7 @@ inline void freeBindIfTime(MYSQL_BIND& bind)
 class InputBindArray
 {
 public:
-  explicit InputBindArray(std::size_t nbinds) noexcept
-    : binds(nbinds)
+  explicit InputBindArray(std::size_t nbinds) noexcept : binds(nbinds)
   {
     std::memset(&this->binds[0], 0, sizeof(MYSQL_BIND) * nbinds);
   }
@@ -113,7 +112,8 @@ public:
         return *value;
       else
         return value;
-    }();
+    }
+    ();
     details::freeBindIfTime(mysql_bind);
     static_assert(std::is_same_v<column_data_t, std::string> ||
                       std::is_same_v<column_data_t, char*> ||
@@ -219,7 +219,8 @@ public:
       }
       else
         return field;
-    }();
+    }
+    ();
     auto& mysql_bind = this->binds[idx];
     details::freeBindIfTime(mysql_bind);
     static_assert(std::is_same_v<column_data_t, std::string> ||
@@ -253,7 +254,7 @@ public:
       mysql_bind.buffer = &attr;
       mysql_bind.buffer_length = sizeof(attr);
     }
-    else if constexpr(std::is_same_v<column_data_t, std::tm>)
+    else if constexpr (std::is_same_v<column_data_t, std::tm>)
     {
       auto* time = new MYSQL_TIME{};
       mysql_bind.buffer_type = MYSQL_TYPE_DATETIME;
@@ -277,7 +278,8 @@ public:
         return *field;
       else
         return field;
-    }();
+    }
+    ();
     static_assert(std::is_same_v<column_data_t, std::string> ||
                       std::is_same_v<column_data_t, char*> ||
                       std::is_integral_v<column_data_t> ||

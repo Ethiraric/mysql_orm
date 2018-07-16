@@ -9,7 +9,7 @@ namespace meta
 {
 /** Metafunction returning true if all types are the same.
  */
-template<typename T, typename... Ts>
+template <typename T, typename... Ts>
 struct AllSame;
 
 template <typename T>

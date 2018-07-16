@@ -39,11 +39,10 @@ public:
   template <typename Assignments>
   SetQuery<Update, Table, Assignments> operator()(Set<Assignments> set)
   {
-    return SetQuery<Update, Table, Assignments>{
-        *this->mysql_handle,
-        *this,
-        this->table.get(),
-        std::move(set.assignments)};
+    return SetQuery<Update, Table, Assignments>{*this->mysql_handle,
+                                                *this,
+                                                this->table.get(),
+                                                std::move(set.assignments)};
   }
 
   auto operator()()

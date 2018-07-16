@@ -49,13 +49,12 @@ public:
   template <typename Condition>
   WhereQuery<Delete, Table, Condition> operator()(Where<Condition> where)
   {
-    return WhereQuery<Delete, Table, Condition>{
-        *this->mysql_handle,
-        *this,
-        this->table.get(),
-        std::move(where.condition)};
+    return WhereQuery<Delete, Table, Condition>{*this->mysql_handle,
+                                                *this,
+                                                this->table.get(),
+                                                std::move(where.condition)};
   }
-  
+
   template <typename Limit>
   LimitQuery<Delete, Table, Limit> operator()(Limit limit)
   {

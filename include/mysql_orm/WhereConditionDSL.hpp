@@ -172,7 +172,8 @@ struct ref
     binds.bind(idx, this->value.get());
   }
 
-  void rebindStdTmReferences(InputBindArray& binds, std::size_t idx) const noexcept
+  void rebindStdTmReferences(InputBindArray& binds, std::size_t idx) const
+      noexcept
   {
     binds.bind(idx, this->value.get());
   }
@@ -205,7 +206,8 @@ struct OperatorClosure
     this->rhs.bindInTo(binds, idx + lhs.getNbInputSlots());
   }
 
-  void rebindStdTmReferences(InputBindArray& binds, std::size_t idx) const noexcept
+  void rebindStdTmReferences(InputBindArray& binds, std::size_t idx) const
+      noexcept
   {
     this->lhs.rebindStdTmReferences(binds, idx);
     this->rhs.rebindStdTmReferences(binds, idx + lhs.getNbInputSlots());
