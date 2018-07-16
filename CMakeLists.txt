@@ -16,5 +16,7 @@ add_library(mysql_orm INTERFACE)
 target_include_directories(mysql_orm INTERFACE include/)
 
 if (MYSQL_ORM_BUILD_TESTS)
+  include(CTest)
+  enable_testing()
   add_subdirectory(tests)
 endif()

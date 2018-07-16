@@ -25,3 +25,21 @@ set(SRCS
 add_executable(mysql_orm_tests ${SRCS})
 target_include_directories(mysql_orm_tests PRIVATE .)
 target_link_libraries(mysql_orm_tests mysqlclient mysql_orm)
+add_test(NAME mysql_orm_tests COMMAND mysql_orm_tests)
+
+function(add_failtest testname src passpattern)
+  add_executable(${testname} ${src})
+  target_include_directories(${testname} PRIVATE .)
+  target_link_libraries(${testname} mysqlclient mysql_orm)
+  set_target_properties(${testname} PROPERTIES
+    EXCLUDE_FROM_ALL TRUE
+    EXCLUDE_FROM_DEFAULT_BUILD TRUE)
+  add_test(NAME ${testname}
+    COMMAND ${PROJECT_SOURCE_DIR}/failcompile_wrapper.sh
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+  set_tests_properties(${testname} PROPERTIES PASS_REGULAR_EXPRESSION ${passpattern})
+  set_tests_properties(${testname} PROPERTIES
+    ENVIRONMENT "CMAKE_COMMAND=${CMAKE_COMMAND};FAILTARGET=${testname};CMAKE_CONFIGURATION=$<CONFIGURATION>")
+endfunction(add_failtest)
+
+add_failtest(select_no_model fail/test_SelectNoModel.cpp "Failed to find table for model")
