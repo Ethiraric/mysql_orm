@@ -6,6 +6,7 @@
 
 #include <mysql/mysql.h>
 
+#include <mysql_orm/Delete.hpp>
 #include <mysql_orm/Exception.hh>
 #include <mysql_orm/Table.hpp>
 #include <mysql_orm/Update.hpp>
@@ -118,6 +119,17 @@ public:
     static_assert(!std::is_same_v<Table_t, void>,
                   "Failed to find table for model");
     return Update<std::remove_reference_t<Table_t>>{
+        *this->handle, std::get<Table_t>(this->tables)};
+  }
+
+  template <typename Model>
+  auto delete_()
+  {
+    using Table_t = typename meta::
+        FindMapped<meta::TableModelGetter, Model, Tables...>::type;
+    static_assert(!std::is_same_v<Table_t, void>,
+                  "Failed to find table for model");
+    return Delete<std::remove_reference_t<Table_t>>{
         *this->handle, std::get<Table_t>(this->tables)};
   }
 

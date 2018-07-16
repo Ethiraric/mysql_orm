@@ -9,6 +9,7 @@ set(SRCS
   test_Column.cpp
   test_ColumnTags.cpp
   test_Database.cpp
+  test_Delete.cpp
   test_Insert.cpp
   test_Limit.cpp
   test_Pack.cpp
