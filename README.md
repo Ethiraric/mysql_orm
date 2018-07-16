@@ -76,7 +76,7 @@ In order to build conditions correctly for `WHERE` and assignments for `SET`, yo
 
 `c` is templated on a pointer to an attribute.
 When put in an operation, it will be substituted by the column corresponding to the attribute.
-In the above example, `c<Record::i>{}>` was changed to `records.i`.
+In the above example, `c<&Record::i>{}` was changed to `records.i`.
 
 `ref` takes a reference to the variable it is given.
 
@@ -108,3 +108,4 @@ Had we written `c<&Record::i>{}=i`, both queries would have evaluated with `i=4`
 
 # Roadmap
  * `DELETE` queries.
+ * Constraints on multiple columns (`UNIQUE(a, b)`).
