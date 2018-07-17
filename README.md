@@ -107,5 +107,4 @@ Had we written `c<&Record::i>{}=i`, both queries would have evaluated with `i=4`
  * Does not work with `clang`.
 
 # Roadmap
- * `DELETE` queries.
  * Constraints on multiple columns (`UNIQUE(a, b)`).
