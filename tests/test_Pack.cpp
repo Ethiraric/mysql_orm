@@ -11,9 +11,11 @@ using mysql_orm::meta::FilterValuePack_t;
 using mysql_orm::meta::MergePacks_t;
 using mysql_orm::meta::MergeValuePacks_t;
 using mysql_orm::meta::Pack;
+using mysql_orm::meta::PackContains_v;
 using mysql_orm::meta::PrependPack_t;
 using mysql_orm::meta::PrependValuePack_t;
 using mysql_orm::meta::ValuePack;
+using mysql_orm::meta::ValuePackContains_v;
 
 TEST_CASE("[Pack] Pack size", "[Pack]")
 {
@@ -60,6 +62,17 @@ TEST_CASE("[Pack] Filter", "[Pack]")
         FilterPack_t<std::is_integral,
                      Pack<std::string, float, double, Pack<>, Pack<int>>>,
         Pack<>>);
+}
+
+TEST_CASE("[Pack] Contains", "[Pack]")
+{
+  CHECK(PackContains_v<int, Pack<int>>);
+  CHECK(!PackContains_v<int, Pack<>>);
+  CHECK(PackContains_v<int, Pack<int, int>>);
+  CHECK(PackContains_v<int, Pack<int, double>>);
+  CHECK(!PackContains_v<int, Pack<double>>);
+  CHECK(!PackContains_v<int, Pack<double, char, float, double>>);
+  CHECK(PackContains_v<int, Pack<double, char, float, double, int>>);
 }
 
 TEST_CASE("[ValuePack] ValuePack size", "[ValuePack]")
@@ -113,4 +126,15 @@ TEST_CASE("[ValuePack] Filter", "[ValuePack]")
   CHECK(std::is_same_v<
         FilterValuePack_t<IsEven, ValuePack<1, 3, 5, 7, 11, 127, 65535>>,
         ValuePack<>>);
+}
+
+TEST_CASE("[ValuePack] Contains", "[ValuePack]")
+{
+  CHECK(ValuePackContains_v<1, ValuePack<1>>);
+  CHECK(!ValuePackContains_v<1, ValuePack<>>);
+  CHECK(ValuePackContains_v<1, ValuePack<1, 1>>);
+  CHECK(ValuePackContains_v<1, ValuePack<1, 2>>);
+  CHECK(!ValuePackContains_v<1, ValuePack<2>>);
+  CHECK(!ValuePackContains_v<1, ValuePack<2, 3, 4, 2>>);
+  CHECK(ValuePackContains_v<1, ValuePack<2, 3, 4, 2, 1>>);
 }

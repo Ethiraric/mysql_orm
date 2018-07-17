@@ -3,6 +3,8 @@
 
 #include <type_traits>
 
+#include <mysql_orm/meta/TypeValEquals.hpp>
+
 namespace mysql_orm
 {
 namespace meta
@@ -81,6 +83,27 @@ struct FilterPack<Filter, Pack<>>
 template <template <typename> typename Filter, typename ZePack>
 using FilterPack_t = typename FilterPack<Filter, ZePack>::type;
 
+/** Returns true if the pack contains the given type.
+ */
+template <typename Needle, typename ZePack>
+struct PackContains;
+
+template <typename Needle>
+struct PackContains<Needle, Pack<>> : std::false_type
+{
+};
+
+template <typename Needle, typename T, typename... Ts>
+struct PackContains<Needle, Pack<T, Ts...>>
+  : std::conditional_t<std::is_same_v<Needle, T>,
+                       std::true_type,
+                       PackContains<Needle, Pack<Ts...>>>
+{
+};
+
+template <typename Needle, typename ZePack>
+inline constexpr auto PackContains_v = PackContains<Needle, ZePack>::value;
+
 /** Empty struct. Used to manipulate template parameter packs.
  */
 template <auto... Vs>
@@ -155,6 +178,28 @@ struct FilterValuePack<Filter, ValuePack<>>
 
 template <template <auto> typename Filter, typename ZeValuePack>
 using FilterValuePack_t = typename FilterValuePack<Filter, ZeValuePack>::type;
+
+/** Returns true if the pack contains the given value.
+ */
+template <auto Needle, typename ZeValuePack>
+struct ValuePackContains;
+
+template <auto Needle>
+struct ValuePackContains<Needle, ValuePack<>> : std::false_type
+{
+};
+
+template <auto Needle, auto V, auto... Vs>
+struct ValuePackContains<Needle, ValuePack<V, Vs...>>
+  : std::conditional_t<TypeValEquals_v<Needle, V>,
+                       std::true_type,
+                       ValuePackContains<Needle, ValuePack<Vs...>>>
+{
+};
+
+template <auto Needle, typename ZePack>
+inline constexpr auto ValuePackContains_v =
+    ValuePackContains<Needle, ZePack>::value;
 }
 }
 
