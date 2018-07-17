@@ -86,12 +86,14 @@ public:
   template <auto... Attrs>
   auto select(MYSQL& mysql) const
   {
+    this->checkAttributes<Attrs...>();
     return Select<Table, Attrs...>(mysql, *this);
   }
 
   template <auto... Attrs>
   auto insertAllBut(MYSQL& mysql, model_type const* model = nullptr) const
   {
+    this->checkAttributes<Attrs...>();
     using PackType = meta::RemoveValueOccurences_t<
         meta::ValuePack<
             meta::MapValue_v<meta::ColumnAttributeGetter, Columns>...>,
@@ -113,6 +115,7 @@ public:
               MYSQL& mysql,
               model_type const* model) const
   {
+    this->checkAttributes<Vs...>();
     return this->insert<Vs...>(mysql, model);
   }
 
@@ -121,6 +124,7 @@ public:
   template <auto... Attrs>
   auto insert(MYSQL& mysql, model_type const* model = nullptr) const
   {
+    this->checkAttributes<Attrs...>();
     return Insert<Table, Attrs...>(mysql, *this, model);
   }
 
@@ -129,6 +133,7 @@ public:
   template <auto... Attrs>
   std::stringstream selectss() const
   {
+    this->checkAttributes<Attrs...>();
     return SelectQueryBuilder<void, Attrs...>::select(*this);
   }
 
@@ -137,6 +142,7 @@ public:
   template <auto... Attrs>
   std::stringstream insertss() const
   {
+    this->checkAttributes<Attrs...>();
     return InsertQueryBuilder<void, Attrs...>::insert(*this);
   }
 
@@ -157,6 +163,15 @@ public:
   }
 
 private:
+  template <auto... Attrs>
+  void checkAttributes() const noexcept
+  {
+    using AttrsPack = meta::ValuePack<
+        meta::MapValue_v<meta::ColumnAttributeGetter, Columns>...>;
+    static_assert((meta::ValuePackContains_v<Attrs, AttrsPack> && ...),
+                  "Failed to find attribute");
+  }
+
   /** Returns a stringstream with a SELECT query for the given attributes.
    */
   template <typename Dummy = void, auto... Attrs>

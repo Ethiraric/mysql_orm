@@ -43,3 +43,5 @@ function(add_failtest testname src passpattern)
 endfunction(add_failtest)
 
 add_failtest(select_no_model fail/test_SelectNoModel.cpp "Failed to find table for model")
+add_failtest(select_attributes_different_models fail/test_SelectAttributesDifferentModels.cpp "Attributes do not refer to the same model")
+add_failtest(select_attribute_not_found fail/test_SelectAttributeNotFound.cpp "Failed to find attribute")
