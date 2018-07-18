@@ -58,21 +58,21 @@ TEST_CASE("[Delete] Delete", "[Delete]")
   SECTION("Everything")
   {
     d.delete_<Record>()();
-    auto const res = d.select<Record>()();
+    auto const res = d.getAll<Record>()();
     REQUIRE(res.empty());
   }
 
   SECTION("Limit")
   {
     d.delete_<Record>()(Limit<1>{})();
-    auto const res = d.select<Record>()();
+    auto const res = d.getAll<Record>()();
     REQUIRE(res.size() == 2);
   }
 
   SECTION("Where")
   {
     d.delete_<Record>()(Where{c<&Record::s>{} == "four"})();
-    auto const res = d.select<Record>()();
+    auto const res = d.getAll<Record>()();
     REQUIRE(res.size() == 2);
     CHECK(res[0] == Record{1, 1, "one"});
     CHECK(res[1] == Record{2, 2, "two"});

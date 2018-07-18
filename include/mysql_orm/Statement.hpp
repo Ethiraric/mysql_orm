@@ -15,6 +15,7 @@
 
 namespace mysql_orm
 {
+
 template <typename Query, typename Model>
 class Statement
 {
@@ -37,7 +38,7 @@ public:
             this->stmt.get(), this->sql_query.c_str(), this->sql_query.size()))
       throw MySQLException("Failed to prepare statement: " +
                            std::string{mysql_error(this->mysql_handle)});
-    if constexpr (query_type == QueryType::Select)
+    if constexpr (query_type == QueryType::GetAll)
       this->bindOutToQuery();
     if constexpr (query_type != QueryType::Insert)
       this->bindInToQuery();
@@ -73,7 +74,7 @@ public:
 
   auto execute()
   {
-    if constexpr (query_type == QueryType::Select)
+    if constexpr (query_type == QueryType::GetAll)
     {
       auto ret = std::vector<Model>{};
       this->sql_execute();
@@ -99,7 +100,7 @@ public:
 private:
   size_t getNbOutputSlots() const noexcept
   {
-    if constexpr (query_type == QueryType::Select)
+    if constexpr (query_type == QueryType::GetAll)
       return this->orm_query.getNbOutputSlots();
     else
       return 0;

@@ -12,7 +12,7 @@
 #include <mysql_orm/Column.hpp>
 #include <mysql_orm/ColumnNamesJoiner.hpp>
 #include <mysql_orm/Insert.hpp>
-#include <mysql_orm/Select.hpp>
+#include <mysql_orm/GetAll.hpp>
 #include <mysql_orm/Utils.hpp>
 #include <mysql_orm/meta/ColumnAttributeGetter.hpp>
 #include <mysql_orm/meta/FindMapped.hpp>
@@ -74,9 +74,9 @@ public:
 
   /** Returns a query to select all fields from the table.
    */
-  auto select(MYSQL& mysql) const
+  auto getAll(MYSQL& mysql) const
   {
-    return Select<Table,
+    return GetAll<Table,
                   meta::MapValue_v<meta::ColumnAttributeGetter, Columns>...>(
         mysql, *this);
   }
@@ -84,10 +84,10 @@ public:
   /** Returns a query to select some fields from the table.
    */
   template <auto... Attrs>
-  auto select(MYSQL& mysql) const
+  auto getAll(MYSQL& mysql) const
   {
     this->checkAttributes<Attrs...>();
-    return Select<Table, Attrs...>(mysql, *this);
+    return GetAll<Table, Attrs...>(mysql, *this);
   }
 
   template <auto... Attrs>

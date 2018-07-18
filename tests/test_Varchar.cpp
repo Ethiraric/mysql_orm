@@ -19,7 +19,7 @@ TEST_CASE("[Varchar] Column field", "[Varchar][Column]")
   CHECK(c2.getSchema() == "`s` VARCHAR(1) NOT NULL");
 }
 
-TEST_CASE("[Varchar] Select", "[Varchar][Select]")
+TEST_CASE("[Varchar] GetAll", "[Varchar][GetAll]")
 {
   auto table_records = make_table("records",
                                   make_column<&Record::id>("id"),
@@ -41,7 +41,7 @@ TEST_CASE("[Varchar] Select", "[Varchar][Select]")
   SECTION("One row")
   {
     d.execute("DELETE FROM `records` WHERE `id`>1");
-    auto const res = d.select<Record>().build().execute();
+    auto const res = d.getAll<Record>().build().execute();
     static_assert(
         std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
         "Wrong return type");
@@ -51,7 +51,7 @@ TEST_CASE("[Varchar] Select", "[Varchar][Select]")
 
   SECTION("All rows")
   {
-    auto const res = d.select<Record>().build().execute();
+    auto const res = d.getAll<Record>().build().execute();
     static_assert(
         std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
         "Wrong return type");
@@ -85,7 +85,7 @@ TEST_CASE("[Varchar] Insert", "[Varchar][Insert]")
   SECTION("One row")
   {
     CHECK(d.insert(Record{4, 8, "eight"})() == 4);
-    auto const res = d.select<Record>().build().execute();
+    auto const res = d.getAll<Record>().build().execute();
     REQUIRE(res.size() == 4);
     CHECK(res[0] == Record{1, 1, "one"});
     CHECK(res[1] == Record{2, 2, "two"});

@@ -74,7 +74,7 @@ TEST_CASE("[Insert] Insert", "[Insert]")
   SECTION("One row")
   {
     CHECK(d.insert(Record{4, 8, "eight"})() == 4);
-    auto const res = d.select<Record>().build().execute();
+    auto const res = d.getAll<Record>().build().execute();
     REQUIRE(res.size() == 4);
     CHECK(res[0] == Record{1, 1, "one"});
     CHECK(res[1] == Record{2, 2, "two"});
@@ -85,7 +85,7 @@ TEST_CASE("[Insert] Insert", "[Insert]")
   SECTION("Datetime")
   {
     CHECK(d.insert(RecordWithTime{2, makeTm(2018, 2, 3, 4, 5, 6)})() == 2);
-    auto const res = d.select<RecordWithTime>().build().execute();
+    auto const res = d.getAll<RecordWithTime>().build().execute();
     REQUIRE(res.size() == 2);
     CHECK(res[0] == RecordWithTime{1, makeTm(2018, 1, 2, 3, 4, 5)});
     CHECK(res[1] == RecordWithTime{2, makeTm(2018, 2, 3, 4, 5, 6)});

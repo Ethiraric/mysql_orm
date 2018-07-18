@@ -8,7 +8,8 @@ enum class QueryType
   Select,
   Insert,
   Update,
-  Delete
+  Delete,
+  GetAll
 };
 }
 

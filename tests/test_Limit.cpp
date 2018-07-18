@@ -4,7 +4,7 @@
 
 #include <Record.hh>
 #include <mysql_orm/Database.hpp>
-#include <mysql_orm/Select.hpp>
+#include <mysql_orm/GetAll.hpp>
 
 using mysql_orm::c;
 using mysql_orm::Limit;
@@ -24,7 +24,7 @@ TEST_CASE("[Limit] Limit buildquery", "[Limit]")
                          "mysql_orm_test_db",
                          table_records);
 
-  CHECK(d.select<Record>()(Limit<2>{}).buildquery() ==
+  CHECK(d.getAll<Record>()(Limit<2>{}).buildquery() ==
         "SELECT `id`, `i`, `s` FROM `records` LIMIT 2");
 }
 
@@ -50,7 +50,7 @@ TEST_CASE("[Limit] Simple Limit", "[Limit]")
   SECTION("Templated")
   {
     auto const res =
-        d.select<RecordWithOptionals>()(Limit<2>{}).build().execute();
+        d.getAll<RecordWithOptionals>()(Limit<2>{}).build().execute();
     static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
                                  std::vector<RecordWithOptionals>>,
                   "Wrong return type");
@@ -63,7 +63,7 @@ TEST_CASE("[Limit] Simple Limit", "[Limit]")
   {
     auto const i = size_t{1};
     auto const res =
-        d.select<RecordWithOptionals>()(Limit<>{i}).build().execute();
+        d.getAll<RecordWithOptionals>()(Limit<>{i}).build().execute();
     static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
                                  std::vector<RecordWithOptionals>>,
                   "Wrong return type");

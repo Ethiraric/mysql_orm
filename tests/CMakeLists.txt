@@ -14,7 +14,7 @@ set(SRCS
   test_Limit.cpp
   test_Pack.cpp
   test_RemoveOccurences.cpp
-  test_Select.cpp
+  test_GetAll.cpp
   test_Table.cpp
   test_Update.cpp
   test_Varchar.cpp
@@ -42,6 +42,6 @@ function(add_failtest testname src passpattern)
     ENVIRONMENT "CMAKE_COMMAND=${CMAKE_COMMAND};FAILTARGET=${testname};CMAKE_CONFIGURATION=$<CONFIGURATION>")
 endfunction(add_failtest)
 
-add_failtest(select_no_model fail/test_SelectNoModel.cpp "Failed to find table for model")
-add_failtest(select_attributes_different_models fail/test_SelectAttributesDifferentModels.cpp "Attributes do not refer to the same model")
-add_failtest(select_attribute_not_found fail/test_SelectAttributeNotFound.cpp "Failed to find attribute")
+add_failtest(select_no_model fail/test_GetAllNoModel.cpp "Failed to find table for model")
+add_failtest(select_attributes_different_models fail/test_GetAllAttributesDifferentModels.cpp "Attributes do not refer to the same model")
+add_failtest(select_attribute_not_found fail/test_GetAllAttributeNotFound.cpp "Failed to find attribute")

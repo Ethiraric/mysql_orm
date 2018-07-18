@@ -48,7 +48,7 @@ TEST_CASE("Selection statement", "[Table]")
                           make_column<&MixedRecord::id>("id"),
                           make_column<&MixedRecord::i>("i"),
                           make_column<&MixedRecord::s>("foo"));
-      CHECK(t.select(dangling_ref<MYSQL>()).buildquery() ==
+      CHECK(t.getAll(dangling_ref<MYSQL>()).buildquery() ==
             "SELECT `id`, `i`, `foo` "
             "FROM `record`");
     }
@@ -59,7 +59,7 @@ TEST_CASE("Selection statement", "[Table]")
                           make_column<&MixedRecord::id>("id"),
                           make_column<&MixedRecord::i>("i"),
                           make_column<&MixedRecord::s>("foo"));
-      CHECK(t.select<&MixedRecord::id, &MixedRecord::s>(dangling_ref<MYSQL>())
+      CHECK(t.getAll<&MixedRecord::id, &MixedRecord::s>(dangling_ref<MYSQL>())
                 .buildquery() ==
             "SELECT `id`, `foo` "
             "FROM `record`");
@@ -77,7 +77,7 @@ TEST_CASE("Where clause", "[Table]")
                           make_column<&MixedRecord::id>("id"),
                           make_column<&MixedRecord::i>("i"),
                           make_column<&MixedRecord::s>("foo"));
-      CHECK(t.select(dangling_ref<MYSQL>())(Where{c<&MixedRecord::id>{} == 1})
+      CHECK(t.getAll(dangling_ref<MYSQL>())(Where{c<&MixedRecord::id>{} == 1})
                 .buildquery() ==
             "SELECT `id`, `i`, `foo` "
             "FROM `record` WHERE `id`=?");

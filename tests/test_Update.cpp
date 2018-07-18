@@ -78,7 +78,7 @@ TEST_CASE("[Update] Update", "[Update]")
   SECTION("All rows")
   {
     d.update<Record>()(Set{c<&Record::i>{} = 3}).build().execute();
-    auto const res = d.select<Record>().build().execute();
+    auto const res = d.getAll<Record>().build().execute();
     static_assert(
         std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
         "Wrong return type");
@@ -93,7 +93,7 @@ TEST_CASE("[Update] Update", "[Update]")
     d.update<Record>()(Set{c<&Record::i>{} = 3})(Where{c<&Record::id>() == 2})
         .build()
         .execute();
-    auto const res = d.select<Record>().build().execute();
+    auto const res = d.getAll<Record>().build().execute();
     static_assert(
         std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
         "Wrong return type");
@@ -109,7 +109,7 @@ TEST_CASE("[Update] Update", "[Update]")
          Where{c<&Record::id>() == 2})
         .build()
         .execute();
-    auto const res = d.select<Record>().build().execute();
+    auto const res = d.getAll<Record>().build().execute();
     static_assert(
         std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
         "Wrong return type");
@@ -128,7 +128,7 @@ TEST_CASE("[Update] Update", "[Update]")
                                  c<&LargeRecord::e>{} = 5,
                                  c<&LargeRecord::f>{} = 6,
                                  c<&LargeRecord::g>{} = 7)})();
-    auto const res = d.select<LargeRecord>()();
+    auto const res = d.getAll<LargeRecord>()();
     static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
                                  std::vector<LargeRecord>>,
                   "Wrong return type");

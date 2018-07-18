@@ -1,5 +1,5 @@
-#ifndef MYSQL_ORM_SELECT_HPP_
-#define MYSQL_ORM_SELECT_HPP_
+#ifndef MYSQL_ORM_GETALL_HPP_
+#define MYSQL_ORM_GETALL_HPP_
 
 #include <sstream>
 #include <utility>
@@ -13,11 +13,13 @@
 
 namespace mysql_orm
 {
-/** A Select query.
+/** A GetAll query.
  *
  * The class selects all attributes that are given in template arguments.
  * All attributes must refer to the model of the table for the program to
  * compile.
+ *
+ * This query returns objects as opposed to raw columns.
  *
  * `buildquery` returns the SQL query as a std::string.
  * `build` returns a `Statement`, which can later be `execute()`d.
@@ -25,35 +27,35 @@ namespace mysql_orm
  * The `operator()` can be used to continue the query (Where, Limit).
  */
 template <typename Table, auto... Attrs>
-class Select
+class GetAll
 {
 public:
   using model_type = typename Table::model_type;
-  static inline constexpr auto query_type{QueryType::Select};
+  static inline constexpr auto query_type{QueryType::GetAll};
 
-  Select(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{t}
+  GetAll(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{t}
   {
   }
-  Select(Select const& b) noexcept = default;
-  Select(Select&& b) noexcept = default;
-  ~Select() noexcept = default;
+  GetAll(GetAll const& b) noexcept = default;
+  GetAll(GetAll&& b) noexcept = default;
+  ~GetAll() noexcept = default;
 
-  Select& operator=(Select const& rhs) noexcept = default;
-  Select& operator=(Select&& rhs) noexcept = default;
+  GetAll& operator=(GetAll const& rhs) noexcept = default;
+  GetAll& operator=(GetAll&& rhs) noexcept = default;
 
   template <typename Condition>
-  WhereQuery<Select, Table, Condition> operator()(Where<Condition> where)
+  WhereQuery<GetAll, Table, Condition> operator()(Where<Condition> where)
   {
-    return WhereQuery<Select, Table, Condition>{*this->mysql_handle,
+    return WhereQuery<GetAll, Table, Condition>{*this->mysql_handle,
                                                 *this,
                                                 this->table.get(),
                                                 std::move(where.condition)};
   }
 
   template <typename Limit>
-  LimitQuery<Select, Table, Limit> operator()(Limit limit)
+  LimitQuery<GetAll, Table, Limit> operator()(Limit limit)
   {
-    return LimitQuery<Select, Table, Limit>{
+    return LimitQuery<GetAll, Table, Limit>{
         *this->mysql_handle, *this, this->table.get(), std::move(limit)};
   }
 
@@ -72,9 +74,9 @@ public:
     return this->table.get().template selectss<Attrs...>();
   }
 
-  Statement<Select, model_type> build() const
+  Statement<GetAll, model_type> build() const
   {
-    return Statement<Select, model_type>{*this->mysql_handle, *this};
+    return Statement<GetAll, model_type>{*this->mysql_handle, *this};
   }
 
   size_t getNbInputSlots() const noexcept
@@ -118,4 +120,4 @@ private:
 };
 }
 
-#endif /* !MYSQL_ORM_SELECT_HPP_ */
+#endif /* !MYSQL_ORM_GETALL_HPP_ */

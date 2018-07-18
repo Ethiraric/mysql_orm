@@ -60,17 +60,17 @@ public:
   }
 
   template <typename Model>
-  auto select()
+  auto getAll()
   {
-    return this->getTable<Model>().select(*this->handle);
+    return this->getTable<Model>().getAll(*this->handle);
   }
 
   template <auto Attr, auto... Attrs>
-  auto select()
+  auto getAll()
   {
     this->checkAttributes<Attr, Attrs...>();
     using Model_t = meta::AttributeModelGetter_t<decltype(Attr)>;
-    return this->getTable<Model_t>().template select<Attr, Attrs...>(
+    return this->getTable<Model_t>().template getAll<Attr, Attrs...>(
         *this->handle);
   }
 

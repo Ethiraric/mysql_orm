@@ -1,4 +1,4 @@
-#include <mysql_orm/Select.hpp>
+#include <mysql_orm/GetAll.hpp>
 
 #include <catch.hpp>
 
@@ -15,7 +15,7 @@ using mysql_orm::MySQLException;
 using mysql_orm::ref;
 using mysql_orm::Where;
 
-TEST_CASE("[Select] Select buildquery", "[Select]")
+TEST_CASE("[GetAll] GetAll buildquery", "[GetAll]")
 {
   auto table_mixed_records = make_table("mixed_records",
                                         make_column<&MixedRecord::id>("id"),
@@ -34,11 +34,11 @@ TEST_CASE("[Select] Select buildquery", "[Select]")
                          table_mixed_records,
                          table_records);
 
-  CHECK(d.select<MixedRecord>().buildquery() ==
+  CHECK(d.getAll<MixedRecord>().buildquery() ==
         "SELECT `id`, `i`, `foo` FROM `mixed_records`");
 }
 
-TEST_CASE("[Select] Select", "[Select]")
+TEST_CASE("[GetAll] GetAll", "[GetAll]")
 {
   auto table_records = make_table("records",
                                   make_column<&Record::id>("id"),
@@ -60,7 +60,7 @@ TEST_CASE("[Select] Select", "[Select]")
   SECTION("One row")
   {
     d.execute("DELETE FROM `records` WHERE `id`>1");
-    auto const res = d.select<Record>().build().execute();
+    auto const res = d.getAll<Record>().build().execute();
     static_assert(
         std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
         "Wrong return type");
@@ -70,7 +70,7 @@ TEST_CASE("[Select] Select", "[Select]")
 
   SECTION("All rows")
   {
-    auto const res = d.select<Record>().build().execute();
+    auto const res = d.getAll<Record>().build().execute();
     static_assert(
         std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
         "Wrong return type");
@@ -81,7 +81,7 @@ TEST_CASE("[Select] Select", "[Select]")
   }
 }
 
-TEST_CASE("[Select] Select with optionals", "[Select]")
+TEST_CASE("[GetAll] GetAll with optionals", "[GetAll]")
 {
   auto table_records = make_table("optional_records",
                                   make_column<&RecordWithOptionals::id>("id"),
@@ -111,7 +111,7 @@ TEST_CASE("[Select] Select with optionals", "[Select]")
   SECTION("One row")
   {
     d.execute("DELETE FROM `optional_records` WHERE `id`>1");
-    auto const res = d.select<RecordWithOptionals>().build().execute();
+    auto const res = d.getAll<RecordWithOptionals>().build().execute();
     static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
                                  std::vector<RecordWithOptionals>>,
                   "Wrong return type");
@@ -121,7 +121,7 @@ TEST_CASE("[Select] Select with optionals", "[Select]")
 
   SECTION("All rows")
   {
-    auto const res = d.select<RecordWithOptionals>().build().execute();
+    auto const res = d.getAll<RecordWithOptionals>().build().execute();
     static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
                                  std::vector<RecordWithOptionals>>,
                   "Wrong return type");
@@ -133,7 +133,7 @@ TEST_CASE("[Select] Select with optionals", "[Select]")
 
   SECTION("With time")
   {
-    auto const res = d.select<RecordWithTime>()();
+    auto const res = d.getAll<RecordWithTime>()();
     static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
                                  std::vector<RecordWithTime>>,
                   "Wrong return type");
