@@ -38,10 +38,10 @@ Note that all tables must refer to distinct models.
 
 # Performing queries
 
-A `SELECT` query is written the following way:
+A `SELECT` query on a model is written the following way:
 
 ```cpp
-std::vector<Records> records = database.select<Record>()();
+std::vector<Records> records = database.getAll<Record>()();
 ```
 
 The database automatically chooses the table for `Record` on which to perform the query.
@@ -49,7 +49,7 @@ By default all fields are selected.
 Some fields only may be selected by giving as template arguments the pointer to the attributes to select:
 
 ```cpp
-std::vector<Records> records = database.select<&Record::id, &Record::s>()();
+std::vector<Records> records = database.getAll<&Record::id, &Record::s>()();
 ```
 
 This is the same as:
@@ -62,7 +62,7 @@ SELECT `id`, `s` FROM `records`
 SQL clauses are chained using `operator()`s:
 
 ```cpp
-database.select<Record>()(Where{c<&Record::i>{} = 3})(Limit<1>{})();
+database.getAll<Record>()(Where{c<&Record::i>{} = 3})(Limit<1>{})();
 ```
 
 is equivalent to:
@@ -78,14 +78,14 @@ In order to build conditions correctly for `WHERE` and assignments for `SET`, yo
 When put in an operation, it will be substituted by the column corresponding to the attribute.
 In the above example, `c<&Record::i>{}` was changed to `records.i`.
 
-`ref` takes a reference to the variable it is given.
+`ref` takes a reference to the variable it is given, as opposed to taking it by value.
 
 Let us look at the following:
 
 ```cpp
 int i = 4;
 
-auto query = database.select<Record>()(Where{c<&Record::i>{}=ref{i});
+auto query = database.getAll<Record>()(Where{c<&Record::i>{}=ref{i});
 query();
 i = 2;
 query();
@@ -101,10 +101,11 @@ While the second translates to
 SELECT * FROM `records` WHERE `records`.`i`=2
 ```
 
-Had we written `c<&Record::i>{}=i`, both queries would have evaluated with `i=4`.
+Had we written `c<&Record::i>{}=i`, both calls would have been evaluated with `i=4`.
 
 # Known bugs
  * Does not work with `clang`.
 
 # Roadmap
+ * Joins.
  * Constraints on multiple columns (`UNIQUE(a, b)`).
