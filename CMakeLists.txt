@@ -13,7 +13,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(mysql_orm INTERFACE)
-target_include_directories(mysql_orm INTERFACE include/)
+target_include_directories(mysql_orm INTERFACE include/ deps/include)
 
 if (MYSQL_ORM_BUILD_TESTS)
   include(CTest)
