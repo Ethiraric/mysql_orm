@@ -7,6 +7,7 @@
 #include <mysql_orm/Where.hpp>
 
 using mysql_orm::c;
+using mysql_orm::Connection;
 using mysql_orm::Limit;
 using mysql_orm::make_column;
 using mysql_orm::make_database;
@@ -23,14 +24,9 @@ TEST_CASE("[Delete] Delete buildquery", "[Delete]")
                                   make_column<&Record::id>("id"),
                                   make_column<&Record::i>("i"),
                                   make_column<&Record::s>("s"));
-
-  auto d = make_database("localhost",
-                         3306,
-                         "mysql_orm_test",
-                         "",
-                         "mysql_orm_test_db",
-                         table_mixed_records,
-                         table_records);
+  auto connection =
+      Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
+  auto d = make_database(connection, table_mixed_records, table_records);
 
   CHECK(d.delete_<MixedRecord>().buildquery() ==
         "DELETE FROM `mixed_records`");
@@ -42,12 +38,10 @@ TEST_CASE("[Delete] Delete", "[Delete]")
                                   make_column<&Record::id>("id"),
                                   make_column<&Record::i>("i"),
                                   make_column<&Record::s>("s"));
-  auto d = make_database("localhost",
-                         3306,
-                         "mysql_orm_test",
-                         "",
-                         "mysql_orm_test_db",
-                         table_records);
+  auto connection =
+      Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
+  auto d = make_database(connection, table_records);
+
   d.recreate();
   d.execute(
       "INSERT INTO `records` (`id`, `i`, `s`) VALUES "

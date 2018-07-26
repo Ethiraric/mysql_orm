@@ -7,6 +7,7 @@
 #include <mysql_orm/Where.hpp>
 
 using mysql_orm::c;
+using mysql_orm::Connection;
 using mysql_orm::Limit;
 using mysql_orm::make_column;
 using mysql_orm::make_database;
@@ -25,14 +26,9 @@ TEST_CASE("[GetAll] GetAll buildquery", "[GetAll]")
                                   make_column<&Record::id>("id"),
                                   make_column<&Record::i>("i"),
                                   make_column<&Record::s>("s"));
-
-  auto d = make_database("localhost",
-                         3306,
-                         "mysql_orm_test",
-                         "",
-                         "mysql_orm_test_db",
-                         table_mixed_records,
-                         table_records);
+  auto connection =
+      Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
+  auto d = make_database(connection, table_mixed_records, table_records);
 
   CHECK(d.getAll<MixedRecord>().buildquery() ==
         "SELECT `id`, `i`, `foo` FROM `mixed_records`");
@@ -44,12 +40,10 @@ TEST_CASE("[GetAll] GetAll", "[GetAll]")
                                   make_column<&Record::id>("id"),
                                   make_column<&Record::i>("i"),
                                   make_column<&Record::s>("s"));
-  auto d = make_database("localhost",
-                         3306,
-                         "mysql_orm_test",
-                         "",
-                         "mysql_orm_test_db",
-                         table_records);
+  auto connection =
+      Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
+  auto d = make_database(connection, table_records);
+
   d.recreate();
   d.execute(
       "INSERT INTO `records` (`id`, `i`, `s`) VALUES "
@@ -91,13 +85,10 @@ TEST_CASE("[GetAll] GetAll with optionals", "[GetAll]")
       make_table("records_with_time",
                  make_column<&RecordWithTime::id>("id"),
                  make_column<&RecordWithTime::time>("time"));
-  auto d = make_database("localhost",
-                         3306,
-                         "mysql_orm_test",
-                         "",
-                         "mysql_orm_test_db",
-                         table_records,
-                         table_records_with_time);
+  auto connection =
+      Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
+  auto d = make_database(connection, table_records_with_time, table_records);
+
   d.recreate();
   d.execute(
       "INSERT INTO `optional_records` (`id`, `i`, `s`) VALUES "

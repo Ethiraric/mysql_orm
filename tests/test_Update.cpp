@@ -9,6 +9,7 @@
 
 using mysql_orm::Autoincrement;
 using mysql_orm::c;
+using mysql_orm::Connection;
 using mysql_orm::make_column;
 using mysql_orm::make_database;
 using mysql_orm::make_table;
@@ -29,14 +30,9 @@ TEST_CASE("[Update] Update buildquery", "[Update]")
                                   make_column<&Record::id>("id"),
                                   make_column<&Record::i>("i"),
                                   make_column<&Record::s>("s"));
-
-  auto d = make_database("localhost",
-                         3306,
-                         "mysql_orm_test",
-                         "",
-                         "mysql_orm_test_db",
-                         table_mixed_records,
-                         table_records);
+  auto connection =
+      Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
+  auto d = make_database(connection, table_mixed_records, table_records);
 
   CHECK(d.update<Record>()(Set{c<&Record::i>{} = 3}).buildquery() ==
         "UPDATE `records` SET `i`=?");
@@ -58,13 +54,10 @@ TEST_CASE("[Update] Update", "[Update]")
       make_column<&LargeRecord::e>("e"),
       make_column<&LargeRecord::f>("f"),
       make_column<&LargeRecord::g>("g"));
-  auto d = make_database("localhost",
-                         3306,
-                         "mysql_orm_test",
-                         "",
-                         "mysql_orm_test_db",
-                         table_records,
-                         table_large_records);
+  auto connection =
+      Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
+  auto d = make_database(connection, table_records, table_large_records);
+
   d.recreate();
   d.execute(
       "INSERT INTO `records` (`id`, `i`, `s`) VALUES "

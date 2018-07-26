@@ -6,6 +6,7 @@
 #include <mysql_orm/Database.hpp>
 
 using mysql_orm::Autoincrement;
+using mysql_orm::Connection;
 using mysql_orm::make_column;
 using mysql_orm::make_table;
 using mysql_orm::make_varchar;
@@ -25,12 +26,10 @@ TEST_CASE("[Varchar] GetAll", "[Varchar][GetAll]")
                                   make_column<&Record::id>("id"),
                                   make_column<&Record::i>("i"),
                                   make_varchar<10, &Record::s>("s"));
-  auto d = make_database("localhost",
-                         3306,
-                         "mysql_orm_test",
-                         "",
-                         "mysql_orm_test_db",
-                         table_records);
+  auto connection =
+      Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
+  auto d = make_database(connection, table_records);
+
   d.recreate();
   d.execute(
       "INSERT INTO `records` (`id`, `i`, `s`) VALUES "
@@ -69,12 +68,10 @@ TEST_CASE("[Varchar] Insert", "[Varchar][Insert]")
                  make_column<&Record::id>("id", PrimaryKey{}, Autoincrement{}),
                  make_column<&Record::i>("i"),
                  make_varchar<40, &Record::s>("s"));
-  auto d = make_database("localhost",
-                         3306,
-                         "mysql_orm_test",
-                         "",
-                         "mysql_orm_test_db",
-                         table_records);
+  auto connection =
+      Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
+  auto d = make_database(connection, table_records);
+
   d.recreate();
   d.execute(
       "INSERT INTO `records` (`id`, `i`, `s`) VALUES "

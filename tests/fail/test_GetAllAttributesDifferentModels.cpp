@@ -3,6 +3,7 @@
 
 #include <Record.hh>
 
+using mysql_orm::Connection;
 using mysql_orm::make_column;
 using mysql_orm::make_database;
 using mysql_orm::make_table;
@@ -17,13 +18,9 @@ int main()
                                         make_column<&MixedRecord::id>("id"),
                                         make_column<&MixedRecord::i>("i"),
                                         make_column<&MixedRecord::s>("foo"));
-  auto d = make_database("localhost",
-                         3306,
-                         "mysql_orm_test",
-                         "",
-                         "mysql_orm_test_db",
-                         table_records,
-                         table_mixed_records);
+  auto connection =
+      Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
+  auto d = make_database(connection, table_records);
 
   d.getAll<&Record::id, &MixedRecord::id>();
 }

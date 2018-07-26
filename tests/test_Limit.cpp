@@ -7,6 +7,7 @@
 #include <mysql_orm/GetAll.hpp>
 
 using mysql_orm::c;
+using mysql_orm::Connection;
 using mysql_orm::Limit;
 using mysql_orm::make_column;
 using mysql_orm::ref;
@@ -17,12 +18,9 @@ TEST_CASE("[Limit] Limit buildquery", "[Limit]")
                                   make_column<&Record::id>("id"),
                                   make_column<&Record::i>("i"),
                                   make_column<&Record::s>("s"));
-  auto d = make_database("localhost",
-                         3306,
-                         "mysql_orm_test",
-                         "",
-                         "mysql_orm_test_db",
-                         table_records);
+  auto connection =
+      Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
+  auto d = make_database(connection, table_records);
 
   CHECK(d.getAll<Record>()(Limit<2>{}).buildquery() ==
         "SELECT `id`, `i`, `s` FROM `records` LIMIT 2");
@@ -34,12 +32,10 @@ TEST_CASE("[Limit] Simple Limit", "[Limit]")
                                   make_column<&RecordWithOptionals::id>("id"),
                                   make_column<&RecordWithOptionals::i>("i"),
                                   make_column<&RecordWithOptionals::s>("s"));
-  auto d = make_database("localhost",
-                         3306,
-                         "mysql_orm_test",
-                         "",
-                         "mysql_orm_test_db",
-                         table_records);
+  auto connection =
+      Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
+  auto d = make_database(connection, table_records);
+
   d.recreate();
   d.execute(
       "INSERT INTO `optional_records` (`id`, `i`, `s`) VALUES "

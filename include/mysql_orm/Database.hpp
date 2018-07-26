@@ -6,6 +6,7 @@
 
 #include <mysql/mysql.h>
 
+#include <mysql_orm/Connection.hpp>
 #include <mysql_orm/Delete.hpp>
 #include <mysql_orm/Exception.hh>
 #include <mysql_orm/Table.hpp>
@@ -21,28 +22,10 @@ template <typename... Tables>
 class Database
 {
 public:
-  Database(std::string const& host,
-           unsigned short port,
-           std::string const& username,
-           std::string const& password,
-           std::string const& database,
-           Tables&&... tabls)
-    : handle{mysql_init(nullptr), &mysql_close},
+  Database(Connection& hdl, Tables&&... tabls)
+    : handle{hdl},
       tables{std::forward_as_tuple(tabls...)}
   {
-    if (!mysql_real_connect(this->handle.get(),
-                            host.c_str(),
-                            username.c_str(),
-                            password.c_str(),
-                            database.c_str(),
-                            port,
-                            nullptr,
-                            CLIENT_MULTI_STATEMENTS))
-      throw MySQLException("Failed to connect to database");
-
-    auto reconnect = my_bool{1};
-    if (mysql_options(this->handle.get(), MYSQL_OPT_RECONNECT, &reconnect))
-      throw MySQLException("Failed to set MySQL autoreconnect");
   }
 
   Database(Database const& b) noexcept = delete;
@@ -54,15 +37,15 @@ public:
 
   void execute(std::string const& query)
   {
-    if (mysql_real_query(this->handle.get(), query.c_str(), query.size()))
-      throw MySQLQueryException(mysql_errno(this->handle.get()),
-                                mysql_error(this->handle.get()));
+    if (mysql_real_query(this->getMYSQLHandle(), query.c_str(), query.size()))
+      throw MySQLQueryException(mysql_errno(this->getMYSQLHandle()),
+                                mysql_error(this->getMYSQLHandle()));
   }
 
   template <typename Model>
   auto getAll()
   {
-    return this->getTable<Model>().getAll(*this->handle);
+    return this->getTable<Model>().getAll(*this->getMYSQLHandle());
   }
 
   template <auto Attr, auto... Attrs>
@@ -71,13 +54,13 @@ public:
     this->checkAttributes<Attr, Attrs...>();
     using Model_t = meta::AttributeModelGetter_t<decltype(Attr)>;
     return this->getTable<Model_t>().template getAll<Attr, Attrs...>(
-        *this->handle);
+        *this->getMYSQLHandle());
   }
 
   template <typename Model>
   auto insert(Model const& model)
   {
-    return this->getTable<Model>().insert(*this->handle, &model);
+    return this->getTable<Model>().insert(*this->getMYSQLHandle(), &model);
   }
 
   template <auto Attr,
@@ -88,7 +71,7 @@ public:
     this->checkAttributes<Attr, Attrs...>();
     using Model_t = meta::AttributeModelGetter_t<decltype(Attr)>;
     return this->getTable<Model_t>().template insert<Attr, Attrs...>(
-        *this->handle, &model);
+        *this->getMYSQLHandle(), &model);
   }
 
   template <auto Attr,
@@ -99,7 +82,7 @@ public:
     this->checkAttributes<Attr, Attrs...>();
     using Model_t = meta::AttributeModelGetter_t<decltype(Attr)>;
     return this->getTable<Model_t>().template insertAllBut<Attr, Attrs...>(
-        *this->handle, &model);
+        *this->getMYSQLHandle(), &model);
   }
 
   template <typename Model>
@@ -110,7 +93,7 @@ public:
     static_assert(!std::is_same_v<Table_t, void>,
                   "Failed to find table for model");
     return Update<std::remove_reference_t<Table_t>>{
-        *this->handle, std::get<Table_t>(this->tables)};
+        *this->getMYSQLHandle(), std::get<Table_t>(this->tables)};
   }
 
   template <typename Model>
@@ -121,7 +104,7 @@ public:
     static_assert(!std::is_same_v<Table_t, void>,
                   "Failed to find table for model");
     return Delete<std::remove_reference_t<Table_t>>{
-        *this->handle, std::get<Table_t>(this->tables)};
+        *this->getMYSQLHandle(), std::get<Table_t>(this->tables)};
   }
 
   void recreate()
@@ -170,6 +153,11 @@ public:
   }
 
 private:
+  MYSQL* getMYSQLHandle() noexcept
+  {
+    return this->handle.get().getHandle();
+  }
+
   template <typename Model>
   auto& getTable()
   {
@@ -194,24 +182,14 @@ private:
                   "Failed to find table for model");
   }
 
-  std::unique_ptr<MYSQL, decltype(&mysql_close)> handle;
+  std::reference_wrapper<Connection> handle;
   std::tuple<Tables...> tables;
 };
 
 template <typename... Tables>
-auto make_database(std::string const& host,
-                   unsigned short port,
-                   std::string const& username,
-                   std::string const& password,
-                   std::string const& database,
-                   Tables&&... tables)
+auto make_database(Connection& hdl, Tables&&... tables)
 {
-  return Database<Tables...>{host,
-                             port,
-                             username,
-                             password,
-                             database,
-                             std::forward<Tables>(tables)...};
+  return Database<Tables...>{hdl, std::forward<Tables>(tables)...};
 }
 }
 

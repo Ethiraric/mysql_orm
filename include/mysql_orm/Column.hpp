@@ -7,6 +7,8 @@
 #include <optional>
 #include <string>
 
+#include <CompileString/CompileString.hpp>
+
 #include <mysql_orm/ColumnConstraints.hpp>
 #include <mysql_orm/meta/AttributePtrDissector.hpp>
 #include <mysql_orm/meta/IsOptional.hpp>

@@ -7,6 +7,7 @@
 #include <mysql_orm/GetAll.hpp>
 
 using mysql_orm::c;
+using mysql_orm::Connection;
 using mysql_orm::make_column;
 using mysql_orm::ref;
 using mysql_orm::Where;
@@ -17,12 +18,9 @@ TEST_CASE("[Where] Where buildquery", "[Where]")
                                   make_column<&Record::id>("id"),
                                   make_column<&Record::i>("i"),
                                   make_column<&Record::s>("s"));
-  auto d = make_database("localhost",
-                         3306,
-                         "mysql_orm_test",
-                         "",
-                         "mysql_orm_test_db",
-                         table_records);
+  auto connection =
+      Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
+  auto d = make_database(connection, table_records);
 
   CHECK(d.getAll<Record>()(Where{c<&Record::i>{} == 3}).buildquery() ==
         "SELECT `id`, `i`, `s` FROM `records` WHERE `i`=?");
@@ -48,13 +46,10 @@ TEST_CASE("[Where] Simple Where", "[Where]")
       make_table("records_with_time",
                  make_column<&RecordWithTime::id>("id"),
                  make_column<&RecordWithTime::time>("time"));
-  auto d = make_database("localhost",
-                         3306,
-                         "mysql_orm_test",
-                         "",
-                         "mysql_orm_test_db",
-                         table_records,
-                         table_records_with_time);
+  auto connection =
+      Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
+  auto d = make_database(connection, table_records, table_records_with_time);
+
   d.recreate();
   d.execute(
       "INSERT INTO `records` (`id`, `i`, `s`) VALUES "
