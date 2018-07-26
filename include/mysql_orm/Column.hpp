@@ -75,6 +75,7 @@ constexpr char const* getFieldSQLType()
 template <typename Model,
           typename Field,
           Field Model::*attr,
+          std::size_t NAME_SIZE,
           std::size_t VARCHAR_SIZE = 0>
 class Column
 {
@@ -86,8 +87,9 @@ public:
   static inline constexpr auto is_optional = meta::IsOptional_v<Field>;
   static inline constexpr auto varchar_size = VARCHAR_SIZE;
 
-  Column(std::string name, ColumnConstraints t = ColumnConstraints{}) noexcept
-    : column_name{std::move(name)}, tags{t}
+  Column(char const (&name)[NAME_SIZE],
+         ColumnConstraints t = ColumnConstraints{}) noexcept
+    : column_name{name}, tags{t}
   {
     if constexpr (varchar_size > 0 &&
                   !(std::is_same_v<lifted_field_type, std::string> ||
@@ -111,7 +113,7 @@ public:
     auto const tagstr = this->tags.toString();
     auto schema = std::string{};
 
-    schema = '`' + this->column_name + '`' + ' ';
+    schema = '`' + this->getName() + '`' + ' ';
     if constexpr (varchar_size > 0)
       schema += "VARCHAR(" + std::to_string(varchar_size) + ')';
     else
@@ -121,13 +123,16 @@ public:
     return schema;
   }
 
-  std::string const& getName() const noexcept
+  std::string getName() const noexcept
   {
-    return this->column_name;
+    return std::string{this->column_name.data()};
   }
 
 private:
-  std::string column_name;
+  template <std::size_t N>
+  using CompileString = compile_string::CompileString<N>;
+
+  CompileString<NAME_SIZE - 1> column_name;
   ColumnConstraints tags;
 };
 
@@ -141,22 +146,28 @@ private:
  * `make_varchar` is used to not store strings as `TEXT` types, but rather as
  * `VARCHAR`s.
  */
-template <std::size_t varchar_size, auto AttributePtr, typename... Tags>
-auto make_varchar(std::string name, Tags... tagattributes)
+template <std::size_t varchar_size,
+          auto AttributePtr,
+          std::size_t name_size,
+          typename... Tags>
+auto make_varchar(char const (&name)[name_size], Tags... tagattributes)
 {
   using class_t =
       typename meta::AttributePtrDissector<decltype(AttributePtr)>::class_t;
   using attribute_t =
       typename meta::AttributePtrDissector<decltype(AttributePtr)>::attribute_t;
   constexpr auto tags = ColumnConstraints{tagattributes...};
-  return Column<class_t, attribute_t, AttributePtr, varchar_size>{
-      std::move(name), tags};
+  return Column<class_t,
+                attribute_t,
+                AttributePtr,
+                name_size,
+                varchar_size>{name, tags};
 }
 
-template <auto AttributePtr, typename... Tags>
-auto make_column(std::string name, Tags... tagattributes)
+template <auto AttributePtr, std::size_t name_size, typename... Tags>
+auto make_column(char const (&name)[name_size], Tags... tagattributes)
 {
-  return make_varchar<0, AttributePtr>(std::move(name),
+  return make_varchar<0, AttributePtr>(name,
                                        std::forward<Tags>(tagattributes)...);
 }
 }
