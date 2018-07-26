@@ -37,6 +37,11 @@ public:
 
   static inline constexpr auto npos = ::compile_string::npos;
 
+  explicit constexpr CompileString(char c) noexcept : container{0}
+  {
+    static_assert(N == 1, "Can only build CompileString<1> from char");
+    this->container[0] = c;
+  }
   explicit constexpr CompileString(char const (&contents)[N + 1]) noexcept
     : container{0}
   {
@@ -63,10 +68,6 @@ public:
   constexpr operator std::string_view() const noexcept
   {
     return std::string_view{this->data(), N};
-  }
-  constexpr operator char const*() const noexcept
-  {
-    return this->data();
   }
 
   template <size_type B_N>
@@ -245,6 +246,10 @@ public:
   constexpr size_type size() const noexcept
   {
     return N;
+  }
+  constexpr bool empty() const noexcept
+  {
+    return this->size() == 0;
   }
 
   // Operations
@@ -502,6 +507,10 @@ private:
   container_type container;
 };
 
+template <std::size_t N>
+CompileString(char const (&s)[N])->CompileString<N - 1>;
+CompileString(char c)->CompileString<1>;
+
 template <std::size_t N, std::size_t B_N>
 inline constexpr bool operator==(char const (&a)[N],
                                  CompileString<B_N> const& b) noexcept
@@ -516,13 +525,13 @@ inline constexpr bool operator!=(char const (&a)[N],
 }
 template <std::size_t N, std::size_t B_N>
 inline constexpr bool operator<(char const (&a)[N],
-                                 CompileString<B_N> const& b) noexcept
+                                CompileString<B_N> const& b) noexcept
 {
   return b > a;
 }
 template <std::size_t N, std::size_t B_N>
 inline constexpr bool operator>(char const (&a)[N],
-                                 CompileString<B_N> const& b) noexcept
+                                CompileString<B_N> const& b) noexcept
 {
   return b < a;
 }
@@ -539,8 +548,17 @@ inline constexpr bool operator>=(char const (&a)[N],
   return b <= a;
 }
 
-template <std::size_t N>
-CompileString(char const (&s)[N])->CompileString<N - 1>;
+template <std::size_t N, std::size_t B_N>
+inline constexpr auto operator+(char const (&a)[N],
+                                CompileString<B_N> const& b) noexcept
+{
+  return CompileString{a} + b;
+}
+template <std::size_t B_N>
+inline constexpr auto operator+(char a, CompileString<B_N> const& b) noexcept
+{
+  return CompileString{a} + b;
+}
 }
 
 #endif /* !COMPILESTRING_COMPILESTRING_HPP_ */
