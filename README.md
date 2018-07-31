@@ -29,7 +29,7 @@ If the fields do not refer to the same model, an error is raised at compile-time
 We can now make a database connection from the table:
 
 ```cpp
-auto connection = mysql_orm::Connection("localhost", 3306", "username", "password", "database");
+auto connection = mysql_orm::Connection("localhost", 3306, "username", "password", "database");
 auto database = make_database(connection, table_records);
 ```
 
