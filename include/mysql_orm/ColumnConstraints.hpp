@@ -79,7 +79,7 @@ struct ColumnConstraints
     return tupleFoldl(
         [&](auto const& acc, auto iter) constexpr {
           auto tmpstr = [&]() {
-            if constexpr (std::is_same_v<
+            if constexpr (!std::is_same_v<
                               compile_string::CompileString<0> const&,
                               decltype(acc)>)
               return acc + " ";

@@ -65,7 +65,7 @@ public:
                    return acc + ",\n  " + column.getSchema();
                },
                CompileString<0>{""},
-               this->columns);
+               this->columns) + "\n)";
   }
 
   constexpr auto getName() const noexcept
@@ -198,15 +198,14 @@ private:
       return "INSERT INTO `" + t.table_name + '`' + ' ' + '(' +
              details::ColumnNamesJoiner<Table, Attrs...>::join(t) +
              ") VALUES (" +
-             tupleFoldl(
-                 [](auto const& acc, auto const&) {
+             applyN<sizeof...(Attrs)>(
+                 [](auto const& acc) {
                    if constexpr (acc.empty())
                      return compile_string::CompileString{"?"};
                    else
                      return acc + ", ?";
                  },
-                 CompileString<0>{""},
-                 t.columns) +
+                 CompileString<0>{""}) +
              ')';
     }
   };

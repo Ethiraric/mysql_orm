@@ -106,7 +106,7 @@ struct Assignment
   template <std::size_t N, typename Table>
   auto appendToQuery(CompileString<N> const& query, Table const& t) const
   {
-    return this->rhs.appendToQuery(this->lhs.appendToQuery(query, t) + ", ", t);
+    return this->rhs.appendToQuery(this->lhs.appendToQuery(query, t) + "=", t);
   }
 
   static constexpr size_t getNbInputSlots() noexcept

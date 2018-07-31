@@ -76,7 +76,7 @@ constexpr auto getFieldSQLType()
 template <typename Model,
           typename Field,
           Field Model::*attr,
-          typename ConstraintsPack,
+          typename BaseConstraintsPack,
           std::size_t NAME_SIZE,
           std::size_t VARCHAR_SIZE = 0>
 class Column
@@ -85,6 +85,14 @@ public:
   using model_type = Model;
   using field_type = Field;
   using lifted_field_type = meta::LiftOptional_t<Field>;
+  using ConstraintsPack = std::conditional_t<
+      columnConstraintsFromPack(BaseConstraintsPack{}).nullable() ==
+          Tristate::Undefined,
+      std::conditional_t<std::is_same_v<field_type, lifted_field_type>,
+                       meta::AppendPack_t<BaseConstraintsPack, NotNull>,
+                       meta::AppendPack_t<BaseConstraintsPack, Nullable>>,
+      BaseConstraintsPack>;
+
   static inline constexpr auto attribute = attr;
   static inline constexpr auto is_optional = meta::IsOptional_v<Field>;
   static inline constexpr auto varchar_size = VARCHAR_SIZE;
@@ -97,8 +105,6 @@ public:
                     std::is_same_v<lifted_field_type, char*> ||
                     std::is_same_v<lifted_field_type, char const*>))
       throw std::runtime_error("VARCHAR can only be used for text types");
-    // if (this->tags.nullable == Tristate::Undefined)
-    //   this->tags.nullable = is_optional ? Tristate::On : Tristate::Off;
   }
   constexpr Column(Column const& b) = default;
   constexpr Column(Column&& b) noexcept = default;

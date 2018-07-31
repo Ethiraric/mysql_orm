@@ -70,6 +70,18 @@ constexpr auto tupleFoldl(F f, Init const& init, std::tuple<Ts...> const& t)
 {
   return details::tupleFoldl<sizeof...(Ts) - 1>(f, init, t);
 }
+
+template <std::size_t idx, typename F, typename Init>
+constexpr auto applyN(F f, Init const& acc)
+{
+  if constexpr (idx == 0)
+  {
+    (void)(f);
+    return acc;
+  }
+  else
+    return applyN<idx - 1>(f, f(acc));
+}
 }
 
 #endif /* !MYSQL_ORM_UTILS_HPP_ */
