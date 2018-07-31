@@ -5,12 +5,43 @@
 #include <functional>
 #include <sstream>
 
+#include <CompileString/CompileString.hpp>
+#include <CompileString/ToString.hpp>
 #include <mysql/mysql.h>
 
 #include <mysql_orm/QueryContinuation.hpp>
 
 namespace mysql_orm
 {
+namespace details
+{
+constexpr unsigned int ulog10(std::size_t n)
+{
+  auto log = 0u;
+
+  while (n > 10)
+  {
+    ++log;
+    n /= 10;
+  }
+
+  return log;
+}
+
+constexpr auto toBigEnoughCS(std::size_t n) noexcept
+{
+  constexpr auto retlen = ulog10(std::numeric_limits<std::size_t>::max());
+  auto ret = compile_string::CompileString<retlen>{
+      compile_string::CompileString<0>{""}};
+  for (auto i = std::size_t{0}; i < retlen - 1; ++i)
+    ret[i] = ' ';
+  ret[retlen - 1] = '0';
+  for (auto i = retlen; i > 0 && n > 0; ++i, n /= 10)
+    ret[i - 1] = '0' + n % 10;
+  return ret;
+}
+}
+
 /** Limit clause arguments.
  *
  * This class is used as an argument to a `Select`'s or `Where`'s `operator()`
@@ -42,13 +73,13 @@ struct Limit<0>
  * `buildquery` returns the SQL query as a std::string.
  * `build` returns a `Statement`, which can later be `execute()`d.
  */
-template <typename Query, typename Table, typename Limit>
+template <typename Query, typename Table, typename TLimit>
 class LimitQueryImpl
 {
 public:
   using model_type = typename Query::model_type;
 
-  LimitQueryImpl(MYSQL& mysql, Query q, Table const& t, Limit&& l) noexcept
+  LimitQueryImpl(MYSQL& mysql, Query q, Table const& t, TLimit&& l) noexcept
     : mysql_handle{&mysql}, query{std::move(q)}, table{t}, limit{std::move(l)}
   {
   }
@@ -62,7 +93,12 @@ public:
   auto buildqueryCS() const
   {
     /// XXX(ethiraric): Use the real limit!!!
-    return this->query.buildqueryCS() + " LIMIT 1";
+    if constexpr (!std::is_same_v<TLimit, Limit<0>>)
+      return this->query.buildqueryCS() + " LIMIT " +
+             compile_string::toString<TLimit::value>();
+    else
+      return this->query.buildqueryCS() + " LIMIT " +
+             details::toBigEnoughCS(limit.value);
   }
 
 protected:
@@ -73,7 +109,7 @@ protected:
   std::reference_wrapper<Table const> table;
 
 private:
-  Limit limit;
+  TLimit limit;
 };
 
 template <typename Query, typename Table, typename Limit>

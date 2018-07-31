@@ -57,13 +57,29 @@ TEST_CASE("[Limit] Simple Limit", "[Limit]")
 
   SECTION("With variable")
   {
-    auto const i = size_t{1};
-    auto const res =
-        d.getAll<RecordWithOptionals>()(Limit<>{i}).build().execute();
-    static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
-                                 std::vector<RecordWithOptionals>>,
-                  "Wrong return type");
-    REQUIRE(res.size() == 1);
-    CHECK(res[0] == RecordWithOptionals{1, 1, "one"});
+    SECTION("1")
+    {
+      auto const i = size_t{1};
+      auto const res =
+          d.getAll<RecordWithOptionals>()(Limit<>{i}).build().execute();
+      static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
+                                   std::vector<RecordWithOptionals>>,
+                    "Wrong return type");
+      REQUIRE(res.size() == 1);
+      CHECK(res[0] == RecordWithOptionals{1, 1, "one"});
+    }
+
+    SECTION("2")
+    {
+      auto const i = size_t{2};
+      auto const res =
+          d.getAll<RecordWithOptionals>()(Limit<>{i}).build().execute();
+      static_assert(std::is_same_v<std::remove_cv_t<decltype(res)>,
+                                   std::vector<RecordWithOptionals>>,
+                    "Wrong return type");
+      REQUIRE(res.size() == 2);
+      CHECK(res[0] == RecordWithOptionals{1, 1, "one"});
+      CHECK(res[1] == RecordWithOptionals{2, 2, "two"});
+    }
   }
 }
