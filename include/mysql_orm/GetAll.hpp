@@ -33,18 +33,20 @@ public:
   using model_type = typename Table::model_type;
   static inline constexpr auto query_type{QueryType::GetAll};
 
-  GetAll(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{t}
+  constexpr GetAll(MYSQL& mysql, Table const& t) noexcept
+    : mysql_handle{&mysql}, table{t}
   {
   }
-  GetAll(GetAll const& b) noexcept = default;
-  GetAll(GetAll&& b) noexcept = default;
+  constexpr GetAll(GetAll const& b) noexcept = default;
+  constexpr GetAll(GetAll&& b) noexcept = default;
   ~GetAll() noexcept = default;
 
-  GetAll& operator=(GetAll const& rhs) noexcept = default;
-  GetAll& operator=(GetAll&& rhs) noexcept = default;
+  constexpr GetAll& operator=(GetAll const& rhs) noexcept = default;
+  constexpr GetAll& operator=(GetAll&& rhs) noexcept = default;
 
   template <typename Condition>
-  WhereQuery<GetAll, Table, Condition> operator()(Where<Condition> where)
+  constexpr WhereQuery<GetAll, Table, Condition> operator()(
+      Where<Condition> where)
   {
     return WhereQuery<GetAll, Table, Condition>{*this->mysql_handle,
                                                 *this,
@@ -53,7 +55,7 @@ public:
   }
 
   template <typename Limit>
-  LimitQuery<GetAll, Table, Limit> operator()(Limit limit)
+  constexpr LimitQuery<GetAll, Table, Limit> operator()(Limit limit)
   {
     return LimitQuery<GetAll, Table, Limit>{
         *this->mysql_handle, *this, this->table.get(), std::move(limit)};
@@ -64,49 +66,54 @@ public:
     return this->build().execute();
   }
 
-  std::string buildquery() const
+  constexpr auto buildquery() const noexcept
   {
-    return this->buildqueryss().str();
+    return this->buildqueryCS();
   }
 
-  std::stringstream buildqueryss() const
+  constexpr auto buildqueryCS() const noexcept
   {
-    return this->table.get().template selectss<Attrs...>();
+    return this->table.get().template selectCS<Attrs...>();
   }
 
-  Statement<GetAll, model_type> build() const
+  constexpr Statement<GetAll, model_type> build() const
   {
     return Statement<GetAll, model_type>{*this->mysql_handle, *this};
   }
 
-  size_t getNbInputSlots() const noexcept
+  constexpr static size_t getNbInputSlots() noexcept
   {
     return 0;
   }
 
-  size_t getNbOutputSlots() const noexcept
+  constexpr static size_t getNbOutputSlots() noexcept
   {
     return sizeof...(Attrs);
   }
 
-  void bindOutTo(model_type& model, OutputBindArray& binds) const
+  template <std::size_t NBINDS>
+  void bindOutTo(model_type& model, OutputBindArray<NBINDS>& binds) const
   {
     auto i = std::size_t{0};
-    (binds.bind<std::remove_reference_t<decltype(
+    (binds.template bind<std::remove_reference_t<decltype(
          table.get().template getColumn<Attrs>())>::varchar_size>(i++,
                                                                   model.*Attrs),
      ...);
   }
 
-  void bindInTo(InputBindArray&) const noexcept
+  template <std::size_t NBINDS>
+  constexpr void bindInTo(InputBindArray<NBINDS>&) const noexcept
   {
   }
 
-  void rebindStdTmReferences(InputBindArray&) const noexcept
+  template <std::size_t NBINDS>
+  constexpr void rebindStdTmReferences(InputBindArray<NBINDS>&) const noexcept
   {
   }
 
-  void finalizeBindings(model_type& model, OutputBindArray& binds)
+  template <std::size_t NBINDS>
+  constexpr void finalizeBindings(model_type& model,
+                                  OutputBindArray<NBINDS>& binds)
   {
     auto i = std::size_t{0};
     (binds.finalize(i++, model.*Attrs), ...);

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <ostream>
 
+#include <CompileString/CompileString.hpp>
 #include <mysql/mysql.h>
 
 #include <mysql_orm/BindArray.hpp>
@@ -23,24 +24,24 @@ enum class OperatorType
 };
 
 template <OperatorType type>
-constexpr auto operatorTypeToString()
+constexpr auto operatorTypeToString() noexcept
 {
   if constexpr (type == OperatorType::Equals)
-    return '=';
+    return compile_string::CompileString{"="};
   else if constexpr (type == OperatorType::NotEquals)
-    return "<>";
+    return compile_string::CompileString{"<>"};
   else if constexpr (type == OperatorType::GreaterThan)
-    return ">";
+    return compile_string::CompileString{">"};
   else if constexpr (type == OperatorType::GreaterOrEquals)
-    return ">=";
+    return compile_string::CompileString{">="};
   else if constexpr (type == OperatorType::LessThan)
-    return "<";
+    return compile_string::CompileString{"<"};
   else if constexpr (type == OperatorType::LessOrEquals)
-    return "<=";
+    return compile_string::CompileString{"<="};
   else if constexpr (type == OperatorType::And)
-    return " AND ";
+    return compile_string::CompileString{" AND "};
   else if constexpr (type == OperatorType::Or)
-    return " OR ";
+    return compile_string::CompileString{" OR "};
 }
 
 template <typename Lhs, typename Rhs>
@@ -49,6 +50,9 @@ struct Assignment;
 template <typename Head, typename Tail>
 struct AssignmentList
 {
+  template <std::size_t N>
+  using CompileString = compile_string::CompileString<N>;
+
   template <typename Lhs, typename Rhs>
   auto operator,(Assignment<Lhs, Rhs> assignment)
   {
@@ -56,26 +60,27 @@ struct AssignmentList
         std::move(assignment), *this};
   }
 
-  template <typename Table>
-  void appendToQuery(std::ostream& out, Table const& t) const
+  template <std::size_t N, typename Table>
+  auto appendToQuery(CompileString<N> const& query, Table const& t) const
   {
-    this->head.appendToQuery(out, t);
-    out << ',' << ' ';
-    this->tail.appendToQuery(out, t);
+    return this->tail.appendToQuery(this->head.appendToQuery(query, t) + ", ",
+                                    t);
   }
 
-  size_t getNbInputSlots() const noexcept
+  static constexpr size_t getNbInputSlots() noexcept
   {
-    return this->head.getNbInputSlots() + this->tail.getNbInputSlots();
+    return Head::getNbInputSlots() + Tail::getNbInputSlots();
   }
 
-  void bindInTo(InputBindArray& binds, std::size_t idx) const noexcept
+  template <std::size_t NBINDS>
+  void bindInTo(InputBindArray<NBINDS>& binds, std::size_t idx) const
   {
     this->head.bindInTo(binds, idx);
     this->tail.bindInTo(binds, idx + head.getNbInputSlots());
   }
 
-  void rebindStdTmReferences(InputBindArray&, std::size_t) const noexcept
+  template <std::size_t NBINDS>
+  void rebindStdTmReferences(InputBindArray<NBINDS>&, std::size_t) const noexcept
   {
   }
 
@@ -89,32 +94,35 @@ AssignmentList(Head, Tail)->AssignmentList<Head, Tail>;
 template <typename Lhs, typename Rhs>
 struct Assignment
 {
+  template <std::size_t N>
+  using CompileString = compile_string::CompileString<N>;
+
   template <typename OLhs, typename ORhs>
   auto operator,(Assignment<OLhs, ORhs> other_assignment)
   {
     return AssignmentList{std::move(other_assignment), *this};
   }
 
-  template <typename Table>
-  void appendToQuery(std::ostream& out, Table const& t) const
+  template <std::size_t N, typename Table>
+  auto appendToQuery(CompileString<N> const& query, Table const& t) const
   {
-    this->lhs.appendToQuery(out, t);
-    out << '=';
-    this->rhs.appendToQuery(out, t);
+    return this->rhs.appendToQuery(this->lhs.appendToQuery(query, t) + ", ", t);
   }
 
-  size_t getNbInputSlots() const noexcept
+  static constexpr size_t getNbInputSlots() noexcept
   {
-    return this->lhs.getNbInputSlots() + this->rhs.getNbInputSlots();
+    return Lhs::getNbInputSlots() + Rhs::getNbInputSlots();
   }
 
-  void bindInTo(InputBindArray& binds, std::size_t idx) const noexcept
+  template <std::size_t NBINDS>
+  void bindInTo(InputBindArray<NBINDS>& binds, std::size_t idx) const
   {
     this->lhs.bindInTo(binds, idx);
     this->rhs.bindInTo(binds, idx + lhs.getNbInputSlots());
   }
 
-  void rebindStdTmReferences(InputBindArray&, std::size_t) const noexcept
+  template <std::size_t NBINDS>
+  void rebindStdTmReferences(InputBindArray<NBINDS>&, std::size_t) const noexcept
   {
   }
 
@@ -128,24 +136,28 @@ Assignment(Lhs, Rhs)->Assignment<Lhs, Rhs>;
 template <typename T>
 struct OperandWrapper
 {
-  template <typename Table>
-  void appendToQuery(std::ostream& out, Table const& t) const
+  template <std::size_t N>
+  using CompileString = compile_string::CompileString<N>;
+
+  template <std::size_t N, typename Table>
+  auto appendToQuery(CompileString<N> const& query, Table const&) const
   {
-    (void)(t);
-    out << '?';
+    return query + "?";
   }
 
-  size_t getNbInputSlots() const noexcept
+  static constexpr size_t getNbInputSlots() noexcept
   {
     return 1;
   }
 
-  void bindInTo(InputBindArray& binds, std::size_t idx) const noexcept
+  template <std::size_t NBINDS>
+  void bindInTo(InputBindArray<NBINDS>& binds, std::size_t idx) const
   {
     binds.bind(idx, this->value);
   }
 
-  void rebindStdTmReferences(InputBindArray&, std::size_t) const noexcept
+  template <std::size_t NBINDS>
+  void rebindStdTmReferences(InputBindArray<NBINDS>&, std::size_t) const noexcept
   {
   }
 
@@ -155,25 +167,29 @@ struct OperandWrapper
 template <typename T>
 struct ref
 {
-  template <typename Table>
-  void appendToQuery(std::ostream& out, Table const& t) const
+  template <std::size_t N>
+  using CompileString = compile_string::CompileString<N>;
+
+  template <std::size_t N, typename Table>
+  auto appendToQuery(CompileString<N> const& query, Table const&) const
   {
-    (void)(t);
-    out << '?';
+    return query + "?";
   }
 
-  size_t getNbInputSlots() const noexcept
+  static constexpr size_t getNbInputSlots() noexcept
   {
     return 1;
   }
 
-  void bindInTo(InputBindArray& binds, std::size_t idx) const noexcept
+  template <std::size_t NBINDS>
+  void bindInTo(InputBindArray<NBINDS>& binds, std::size_t idx) const
   {
     binds.bind(idx, this->value.get());
   }
 
-  void rebindStdTmReferences(InputBindArray& binds, std::size_t idx) const
-      noexcept
+  template <std::size_t NBINDS>
+  void rebindStdTmReferences(InputBindArray<NBINDS>& binds,
+                             std::size_t idx) const
   {
     binds.bind(idx, this->value.get());
   }
@@ -187,27 +203,30 @@ ref(T&)->ref<T>;
 template <typename Lhs, typename Rhs, OperatorType type>
 struct OperatorClosure
 {
-  template <typename Table>
-  void appendToQuery(std::ostream& out, Table const& t) const
+  template <std::size_t N>
+  using CompileString = compile_string::CompileString<N>;
+
+  template <std::size_t N, typename Table>
+  auto appendToQuery(CompileString<N> const& query, Table const& t) const
   {
-    this->lhs.appendToQuery(out, t);
-    out << operatorTypeToString<type>();
-    this->rhs.appendToQuery(out, t);
+    return this->rhs.appendToQuery(
+        this->lhs.appendToQuery(query, t) + operatorTypeToString<type>(), t);
   }
 
-  size_t getNbInputSlots() const noexcept
+  static constexpr size_t getNbInputSlots() noexcept
   {
-    return this->lhs.getNbInputSlots() + this->rhs.getNbInputSlots();
+    return Lhs::getNbInputSlots() + Rhs::getNbInputSlots();
   }
 
-  void bindInTo(InputBindArray& binds, std::size_t idx) const noexcept
+  template <std::size_t NBINDS>
+  void bindInTo(InputBindArray<NBINDS>& binds, std::size_t idx) const 
   {
     this->lhs.bindInTo(binds, idx);
     this->rhs.bindInTo(binds, idx + lhs.getNbInputSlots());
   }
 
-  void rebindStdTmReferences(InputBindArray& binds, std::size_t idx) const
-      noexcept
+  template <std::size_t NBINDS>
+  void rebindStdTmReferences(InputBindArray<NBINDS>& binds, std::size_t idx) const
   {
     this->lhs.rebindStdTmReferences(binds, idx);
     this->rhs.rebindStdTmReferences(binds, idx + lhs.getNbInputSlots());
@@ -232,24 +251,29 @@ struct OperatorClosure
 template <auto attr>
 struct c
 {
+  template <std::size_t N>
+  using CompileString = compile_string::CompileString<N>;
+
   static inline constexpr auto attribute = attr;
 
-  template <typename Table>
-  void appendToQuery(std::ostream& out, Table const& t) const
+  template <std::size_t N, typename Table>
+  auto appendToQuery(CompileString<N> const& query, Table const& t) const noexcept
   {
-    out << '`' << t.template getColumn<attr>().getName() << '`';
+    return query + "`" + t.template getColumn<attr>().getName() + "`";
   }
 
-  size_t getNbInputSlots() const noexcept
+  static constexpr size_t getNbInputSlots() noexcept
   {
     return 0;
   }
 
-  void bindInTo(InputBindArray&, std::size_t) const noexcept
+  template <std::size_t NBINDS>
+  void bindInTo(InputBindArray<NBINDS>&, std::size_t) const noexcept
   {
   }
 
-  void rebindStdTmReferences(InputBindArray&, std::size_t) const noexcept
+  template <std::size_t NBINDS>
+  void rebindStdTmReferences(InputBindArray<NBINDS>&, std::size_t) const noexcept
   {
   }
 

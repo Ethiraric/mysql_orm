@@ -4,6 +4,7 @@
 #include <memory>
 #include <tuple>
 
+#include <CompileString/CompileString.hpp>
 #include <mysql/mysql.h>
 
 #include <mysql_orm/Connection.hpp>
@@ -21,19 +22,20 @@ namespace mysql_orm
 template <typename... Tables>
 class Database
 {
+  template <std::size_t N>
+  using CompileString = compile_string::CompileString<N>;
 public:
-  Database(Connection& hdl, Tables&&... tabls)
-    : handle{hdl},
-      tables{std::forward_as_tuple(tabls...)}
+  constexpr Database(MYSQL* hdl, Tables&&... tabls)
+    : handle{hdl}, tables{std::forward_as_tuple(tabls...)}
   {
   }
 
-  Database(Database const& b) noexcept = delete;
-  Database(Database&& b) noexcept = default;
+  constexpr Database(Database const& b) noexcept = delete;
+  constexpr Database(Database&& b) noexcept = default;
   ~Database() noexcept = default;
 
-  Database& operator=(Database const& rhs) noexcept = delete;
-  Database& operator=(Database&& rhs) noexcept = default;
+  constexpr Database& operator=(Database const& rhs) noexcept = delete;
+  constexpr Database& operator=(Database&& rhs) noexcept = default;
 
   void execute(std::string const& query)
   {
@@ -42,14 +44,22 @@ public:
                                 mysql_error(this->getMYSQLHandle()));
   }
 
+  template <std::size_t N>
+  void execute(CompileString<N> const& s)
+  {
+    if (mysql_real_query(this->getMYSQLHandle(), s.c_str(), s.size()))
+      throw MySQLQueryException(mysql_errno(this->getMYSQLHandle()),
+                                mysql_error(this->getMYSQLHandle()));
+  }
+
   template <typename Model>
-  auto getAll()
+  constexpr auto getAll()
   {
     return this->getTable<Model>().getAll(*this->getMYSQLHandle());
   }
 
   template <auto Attr, auto... Attrs>
-  auto getAll()
+  constexpr auto getAll()
   {
     this->checkAttributes<Attr, Attrs...>();
     using Model_t = meta::AttributeModelGetter_t<decltype(Attr)>;
@@ -58,7 +68,7 @@ public:
   }
 
   template <typename Model>
-  auto insert(Model const& model)
+  constexpr auto insert(Model const& model)
   {
     return this->getTable<Model>().insert(*this->getMYSQLHandle(), &model);
   }
@@ -66,7 +76,7 @@ public:
   template <auto Attr,
             auto... Attrs,
             typename Model = meta::AttributeModelGetter_t<decltype(Attr)>>
-  auto insert(Model const& model)
+  constexpr auto insert(Model const& model)
   {
     this->checkAttributes<Attr, Attrs...>();
     using Model_t = meta::AttributeModelGetter_t<decltype(Attr)>;
@@ -77,7 +87,7 @@ public:
   template <auto Attr,
             auto... Attrs,
             typename Model = meta::AttributeModelGetter_t<decltype(Attr)>>
-  auto insertAllBut(Model const& model)
+  constexpr auto insertAllBut(Model const& model)
   {
     this->checkAttributes<Attr, Attrs...>();
     using Model_t = meta::AttributeModelGetter_t<decltype(Attr)>;
@@ -86,7 +96,7 @@ public:
   }
 
   template <typename Model>
-  auto update()
+  constexpr auto update()
   {
     using Table_t = typename meta::
         FindMapped<meta::TableModelGetter, Model, Tables...>::type;
@@ -97,7 +107,7 @@ public:
   }
 
   template <typename Model>
-  auto delete_()
+  constexpr auto delete_()
   {
     using Table_t = typename meta::
         FindMapped<meta::TableModelGetter, Model, Tables...>::type;
@@ -153,13 +163,13 @@ public:
   }
 
 private:
-  MYSQL* getMYSQLHandle() noexcept
+  constexpr MYSQL* getMYSQLHandle() noexcept
   {
-    return this->handle.get().getHandle();
+    return this->handle;
   }
 
   template <typename Model>
-  auto& getTable()
+  constexpr auto& getTable()
   {
     using Table_t = typename meta::
         FindMapped<meta::TableModelGetter, Model, Tables...>::type;
@@ -169,7 +179,7 @@ private:
   }
 
   template <auto Attr, auto... Attrs>
-  void checkAttributes() const noexcept
+  constexpr void checkAttributes() const noexcept
   {
     static_assert(
         meta::AllSame_v<meta::AttributeModelGetter_t<decltype(Attr)>,
@@ -182,14 +192,14 @@ private:
                   "Failed to find table for model");
   }
 
-  std::reference_wrapper<Connection> handle;
+  MYSQL* handle;
   std::tuple<Tables...> tables;
 };
 
 template <typename... Tables>
-auto make_database(Connection& hdl, Tables&&... tables)
+constexpr auto make_database(Connection& hdl, Tables&&... tables)
 {
-  return Database<Tables...>{hdl, std::forward<Tables>(tables)...};
+  return Database<Tables...>{hdl.getHandle(), std::forward<Tables>(tables)...};
 }
 }
 

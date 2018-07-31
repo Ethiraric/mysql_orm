@@ -2,6 +2,12 @@
 #define MYSQL_ORM_COLUMNCONSTRAINTS_HPP_
 
 #include <stdexcept>
+#include <type_traits>
+
+#include <CompileString/CompileString.hpp>
+
+#include <mysql_orm/Utils.hpp>
+#include <mysql_orm/meta/Pack.hpp>
 
 namespace mysql_orm
 {
@@ -16,65 +22,127 @@ enum class Tristate
   Off
 };
 
+template <typename... ConstraintsList>
+struct ConstraintsAggregation
+{
+  constexpr ConstraintsAggregation()
+  {
+    if constexpr (sizeof...(ConstraintsList) > 0)
+      this->apply<ConstraintsList...>();
+  }
+
+  template <typename Constraint, typename... Constraints>
+  constexpr void apply()
+  {
+    Constraint::apply(*this);
+    if constexpr (sizeof...(Constraints) > 0)
+      this->apply<Constraints...>();
+  }
+
+  bool unique{false};
+  Tristate nullable{Tristate::Undefined};
+  bool primary_key{false};
+  bool auto_increment{false};
+};
+
 /** Aggregation of the different column constraints.
  *
- * Each Tag must have overloaded its operator(). Upon construction,
+ * Each Constraint must have overloaded its operator(). Upon construction,
  * ColumnConstraints will invoke each of its arguments' operator(). Each of
  * them should edit the constraint(s) accordingly.
  *
  * One can create its own class editing more than one constraints to have a
  * custom behavior.
  */
+template <typename... ConstraintsList>
 struct ColumnConstraints
 {
-  template <typename... TagList>
-  constexpr ColumnConstraints(TagList... tags)
+  constexpr ColumnConstraints() = default;
+  constexpr ColumnConstraints(ColumnConstraints const& b) noexcept = default;
+  constexpr ColumnConstraints(ColumnConstraints&& b) noexcept = default;
+
+  static constexpr auto toString() noexcept
   {
-    this->apply(tags...);
+    /** The following structures are used as index for iterating over a tuple
+     * with another tuple... Looking for a better solution for now, but
+     * manipulating CompileStrings is not as easy as I thought it would be.
+     */
+    // clang-format off
+    struct T0 {};
+    struct T1 {};
+    struct T2 {};
+    struct T3 {};
+    // clang-format on
+
+    auto iter_tuple = std::tuple<T0, T1, T2, T3>{};
+
+    return tupleFoldl(
+        [&](auto const& acc, auto iter) constexpr {
+          auto tmpstr = [&]() {
+            if constexpr (std::is_same_v<
+                              compile_string::CompileString<0> const&,
+                              decltype(acc)>)
+              return acc + " ";
+            else
+              return acc;
+          }();
+
+          if constexpr (std::is_same_v<decltype(iter), T0> &&
+                        unique())
+            return tmpstr + "UNIQUE";
+          else if constexpr (std::is_same_v<decltype(iter), T1> &&
+                             nullable() == Tristate::Off)
+            return tmpstr + "NOT NULL";
+          else if constexpr (std::is_same_v<decltype(iter), T2> &&
+                             primary_key())
+            return tmpstr + "PRIMARY KEY";
+          else if constexpr (std::is_same_v<decltype(iter), T3> &&
+                             auto_increment())
+            return tmpstr + "AUTO_INCREMENT";
+          else
+            return acc;
+        },
+        compile_string::CompileString<0>{""},
+        iter_tuple);
   }
 
-  std::string toString() const
+  static constexpr bool unique() noexcept
   {
-    auto ret = std::string{};
-    auto add_word = [](std::string& dst, char const* app) {
-      if (!dst.empty())
-        dst += ' ';
-      dst += app;
-    };
-
-    if (this->unique)
-      add_word(ret, "UNIQUE");
-    if (this->nullable == Tristate::Off)
-      add_word(ret, "NOT NULL");
-    if (this->primary_key)
-      add_word(ret, "PRIMARY KEY");
-    if (this->auto_increment)
-      add_word(ret, "AUTO_INCREMENT");
-    return ret;
+    return build().unique;
   }
 
-  Tristate nullable{Tristate::Undefined};
-  bool primary_key{false};
-  bool auto_increment{false};
-  bool unique{false};
+  static constexpr Tristate nullable() noexcept
+  {
+    return build().nullable;
+  }
+
+  static constexpr bool primary_key() noexcept
+  {
+    return build().primary_key;
+  }
+
+  static constexpr bool auto_increment() noexcept
+  {
+    return build().auto_increment;
+  }
 
 private:
-  constexpr void apply()
+  static constexpr auto build() noexcept
   {
-  }
-
-  template <typename Tag, typename... TagList>
-  constexpr void apply(Tag t, TagList... tags)
-  {
-    t(*this);
-    this->apply(tags...);
+    return ConstraintsAggregation<ConstraintsList...>{};
   }
 };
+
+template <typename... Constraints>
+constexpr auto columnConstraintsFromPack(meta::Pack<Constraints...>)
+{
+  return ColumnConstraints<Constraints...>{};
+}
 
 struct Nullable
 {
   template <typename Constraints>
-  constexpr void operator()(Constraints& tags)
+  static constexpr void apply(Constraints& tags)
   {
     if (tags.nullable != Tristate::Undefined)
       throw std::runtime_error("Nullable specified multiple times");
@@ -85,7 +153,7 @@ struct Nullable
 struct NotNull
 {
   template <typename Constraints>
-  constexpr void operator()(Constraints& tags)
+  static constexpr void apply(Constraints& tags)
   {
     if (tags.nullable != Tristate::Undefined)
       throw std::runtime_error("Nullable specified multiple times");
@@ -96,7 +164,7 @@ struct NotNull
 struct PrimaryKey
 {
   template <typename Constraints>
-  constexpr void operator()(Constraints& tags)
+  static constexpr void apply(Constraints& tags)
   {
     if (tags.primary_key)
       throw std::runtime_error("Primary key specified multiple times");
@@ -107,7 +175,7 @@ struct PrimaryKey
 struct Autoincrement
 {
   template <typename Constraints>
-  constexpr void operator()(Constraints& tags)
+  static constexpr void apply(Constraints& tags)
   {
     if (tags.auto_increment)
       throw std::runtime_error("Autoincrement specified multiple times");
@@ -118,7 +186,7 @@ struct Autoincrement
 struct Unique
 {
   template <typename Constraints>
-  constexpr void operator()(Constraints& tags)
+  static constexpr void apply(Constraints& tags)
   {
     if (tags.unique)
       throw std::runtime_error("Unique specified multiple times");

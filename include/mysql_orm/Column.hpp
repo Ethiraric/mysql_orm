@@ -8,6 +8,7 @@
 #include <string>
 
 #include <CompileString/CompileString.hpp>
+#include <CompileString/ToString.hpp>
 
 #include <mysql_orm/ColumnConstraints.hpp>
 #include <mysql_orm/meta/AttributePtrDissector.hpp>
@@ -18,40 +19,40 @@ namespace mysql_orm
 {
 using id_t = uint32_t;
 
-/** Returns a C string with the SQL type of the given field.
+/** Returns a CompileString with the SQL type of the given field.
  *
  * The function errors when the type is unsupported.
  */
 template <typename Field>
-constexpr char const* getFieldSQLType()
+constexpr auto getFieldSQLType()
 {
   if constexpr (std::is_same_v<Field, std::string> ||
                 std::is_same_v<Field, char*> ||
                 std::is_same_v<Field, char const*>)
-    return "TEXT";
+    return compile_string::CompileString{"TEXT"};
   else if constexpr (std::is_integral_v<Field>)
   {
     if constexpr (std::is_same_v<Field, bool>)
-      return "BOOLEAN";
+      return compile_string::CompileString{"BOOLEAN"};
     else if constexpr (std::is_same_v<Field, int8_t>)
-      return "TINYINT";
+      return compile_string::CompileString{"TINYINT"};
     else if constexpr (std::is_same_v<Field, uint8_t>)
-      return "TINYINT UNSIGNED";
+      return compile_string::CompileString{"TINYINT UNSIGNED"};
     else if constexpr (std::is_same_v<Field, int16_t>)
-      return "SMALLINT";
+      return compile_string::CompileString{"SMALLINT"};
     else if constexpr (std::is_same_v<Field, uint16_t>)
-      return "SMALLINT UNSIGNED";
+      return compile_string::CompileString{"SMALLINT UNSIGNED"};
     else if constexpr (std::is_same_v<Field, int32_t>)
-      return "INTEGER";
+      return compile_string::CompileString{"INTEGER"};
     else if constexpr (std::is_same_v<Field, uint32_t>)
-      return "INTEGER UNSIGNED";
+      return compile_string::CompileString{"INTEGER UNSIGNED"};
     else if constexpr (std::is_same_v<Field, int64_t>)
-      return "BIGINT";
+      return compile_string::CompileString{"BIGINT"};
     else if constexpr (std::is_same_v<Field, uint64_t>)
-      return "BIGINT UNSIGNED";
+      return compile_string::CompileString{"BIGINT UNSIGNED"};
   }
   else if constexpr (std::is_same_v<Field, std::tm>)
-    return "DATETIME";
+    return compile_string::CompileString{"DATETIME"};
 }
 
 /** A Column in a table.
@@ -75,6 +76,7 @@ constexpr char const* getFieldSQLType()
 template <typename Model,
           typename Field,
           Field Model::*attr,
+          typename ConstraintsPack,
           std::size_t NAME_SIZE,
           std::size_t VARCHAR_SIZE = 0>
 class Column
@@ -87,45 +89,47 @@ public:
   static inline constexpr auto is_optional = meta::IsOptional_v<Field>;
   static inline constexpr auto varchar_size = VARCHAR_SIZE;
 
-  Column(char const (&name)[NAME_SIZE],
-         ColumnConstraints t = ColumnConstraints{}) noexcept
-    : column_name{name}, tags{t}
+  constexpr Column(char const (&name)[NAME_SIZE]) noexcept
+    : column_name{name}
   {
     if constexpr (varchar_size > 0 &&
                   !(std::is_same_v<lifted_field_type, std::string> ||
                     std::is_same_v<lifted_field_type, char*> ||
                     std::is_same_v<lifted_field_type, char const*>))
       throw std::runtime_error("VARCHAR can only be used for text types");
-    if (this->tags.nullable == Tristate::Undefined)
-      this->tags.nullable = is_optional ? Tristate::On : Tristate::Off;
+    // if (this->tags.nullable == Tristate::Undefined)
+    //   this->tags.nullable = is_optional ? Tristate::On : Tristate::Off;
   }
-  Column(Column const& b) = default;
-  Column(Column&& b) noexcept = default;
+  constexpr Column(Column const& b) = default;
+  constexpr Column(Column&& b) noexcept = default;
   ~Column() noexcept = default;
 
-  Column& operator=(Column const& rhs) = default;
-  Column& operator=(Column&& rhs) noexcept = default;
+  constexpr Column& operator=(Column const& rhs) = default;
+  constexpr Column& operator=(Column&& rhs) noexcept = default;
 
   /** Returns the part of the create statement associated with the column.
    */
-  std::string getSchema() const
+  constexpr auto getSchema() const
   {
-    auto const tagstr = this->tags.toString();
-    auto schema = std::string{};
-
-    schema = '`' + this->getName() + '`' + ' ';
-    if constexpr (varchar_size > 0)
-      schema += "VARCHAR(" + std::to_string(varchar_size) + ')';
+    auto tagstr =
+        columnConstraintsFromPack(ConstraintsPack{}).toString();
+    auto schema = '`' + this->getName() + '`' + ' ';
+    auto schema2 = [&]() {
+      if constexpr (varchar_size > 0)
+        return schema + "VARCHAR(" + compile_string::toString<varchar_size>() +
+               ')';
+      else
+        return schema + getFieldSQLType<lifted_field_type>();
+    }();
+    if constexpr (!tagstr.empty())
+      return schema2 + ' ' + tagstr;
     else
-      schema += getFieldSQLType<lifted_field_type>();
-    if (!tagstr.empty())
-      schema += ' ' + tagstr;
-    return schema;
+      return schema2;
   }
 
-  std::string getName() const noexcept
+  constexpr auto getName() const noexcept
   {
-    return std::string{this->column_name.data()};
+    return this->column_name;
   }
 
 private:
@@ -133,7 +137,6 @@ private:
   using CompileString = compile_string::CompileString<N>;
 
   CompileString<NAME_SIZE - 1> column_name;
-  ColumnConstraints tags;
 };
 
 /** Helper functions to create a column.
@@ -149,26 +152,26 @@ private:
 template <std::size_t varchar_size,
           auto AttributePtr,
           std::size_t name_size,
-          typename... Tags>
-auto make_varchar(char const (&name)[name_size], Tags... tagattributes)
+          typename... Constraints>
+constexpr auto make_varchar(char const (&name)[name_size], Constraints...)
 {
   using class_t =
       typename meta::AttributePtrDissector<decltype(AttributePtr)>::class_t;
   using attribute_t =
       typename meta::AttributePtrDissector<decltype(AttributePtr)>::attribute_t;
-  constexpr auto tags = ColumnConstraints{tagattributes...};
   return Column<class_t,
                 attribute_t,
                 AttributePtr,
+                meta::Pack<Constraints...>,
                 name_size,
-                varchar_size>{name, tags};
+                varchar_size>{name};
 }
 
-template <auto AttributePtr, std::size_t name_size, typename... Tags>
-auto make_column(char const (&name)[name_size], Tags... tagattributes)
+template <auto AttributePtr, std::size_t name_size, typename... Constraints>
+constexpr auto make_column(char const (&name)[name_size],
+                           Constraints... constraints)
 {
-  return make_varchar<0, AttributePtr>(name,
-                                       std::forward<Tags>(tagattributes)...);
+  return make_varchar<0, AttributePtr>(name, constraints...);
 }
 }
 

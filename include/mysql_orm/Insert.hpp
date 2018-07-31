@@ -19,12 +19,12 @@ public:
   using model_type = typename Table::model_type;
   static inline constexpr auto query_type{QueryType::Insert};
 
-  Insert(MYSQL& mysql, Table const& t, model_type const* to_insert) noexcept
+  constexpr Insert(MYSQL& mysql, Table const& t, model_type const* to_insert) noexcept
     : mysql_handle{&mysql}, table{t}, model_to_insert{to_insert}
   {
   }
-  Insert(Insert const& b) noexcept = default;
-  Insert(Insert&& b) noexcept = default;
+  constexpr Insert(Insert const& b) noexcept = default;
+  constexpr Insert(Insert&& b) noexcept = default;
   ~Insert() noexcept = default;
 
   Insert& operator=(Insert const& rhs) noexcept = default;
@@ -35,17 +35,17 @@ public:
     return this->build().execute();
   }
 
-  std::string buildquery() const
+  constexpr auto buildquery() const
   {
-    return this->buildqueryss().str();
+    return this->buildqueryCS();
   }
 
-  std::stringstream buildqueryss() const
+  constexpr auto buildqueryCS() const
   {
-    return this->table.get().template insertss<Attrs...>();
+    return this->table.get().template insertCS<Attrs...>();
   }
 
-  Statement<Insert, model_type> build() const
+  constexpr Statement<Insert, model_type> build() const
   {
     auto stmt = Statement<Insert, model_type>{*this->mysql_handle, *this};
     if (this->model_to_insert)
@@ -53,23 +53,25 @@ public:
     return stmt;
   }
 
-  constexpr size_t getNbInputSlots() const noexcept
+  constexpr static size_t getNbInputSlots() noexcept
   {
     return sizeof...(Attrs);
   }
 
-  size_t getNbOutputSlots() const noexcept
+  constexpr static size_t getNbOutputSlots() noexcept
   {
     return 0;
   }
 
-  void bindInsert(model_type const& model, InputBindArray& binds) const noexcept
+  template <std::size_t NBINDS>
+  void bindInsert(model_type const& model, InputBindArray<NBINDS>& binds) const noexcept
   {
     auto i = std::size_t{0};
     (binds.bind(i++, model.*Attrs), ...);
   }
 
-  void rebindStdTmReferences(InputBindArray&) const noexcept
+  template <std::size_t NBINDS>
+  constexpr void rebindStdTmReferences(InputBindArray<NBINDS>&) const noexcept
   {
   }
 

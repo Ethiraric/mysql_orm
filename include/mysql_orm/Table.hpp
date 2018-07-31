@@ -9,6 +9,8 @@
 
 #include <mysql/mysql.h>
 
+#include <CompileString/CompileString.hpp>
+
 #include <mysql_orm/Column.hpp>
 #include <mysql_orm/ColumnNamesJoiner.hpp>
 #include <mysql_orm/Insert.hpp>
@@ -31,50 +33,49 @@ namespace mysql_orm
  * The class defines one member type:
  *   - `model_type`: Alias to the Model the table refers to.
  */
-template <typename... Columns>
+template <std::size_t NAME_SIZE, typename... Columns>
 class Table
 {
 public:
   using model_type = ColumnModel_t<Columns...>;
 
-  explicit Table(std::string name, Columns&&... cols)
-    : table_name{std::move(name)}, columns{std::forward_as_tuple(cols...)}
+  constexpr explicit Table(char const (&name)[NAME_SIZE], Columns&&... cols)
+    : table_name{name}, columns{std::forward_as_tuple(cols...)}
   {
     static_assert(ColumnsMatch_v<Columns...>,
                   "Columns do not refer to the same model type");
   }
-  Table(Table const& b) = default;
-  Table(Table&& b) noexcept = default;
+  constexpr Table(Table const& b) = default;
+  constexpr Table(Table&& b) noexcept = default;
   ~Table() noexcept = default;
 
-  Table& operator=(Table const& rhs) = default;
-  Table& operator=(Table&& rhs) noexcept = default;
+  constexpr Table& operator=(Table const& rhs) = default;
+  constexpr Table& operator=(Table&& rhs) noexcept = default;
 
   /** Returns a SQL statement to create the table.
    */
-  std::string getSchema() const
+  constexpr auto getSchema() const
   {
-    auto ss = std::stringstream{};
-    auto i = std::size_t{0};
-
-    ss << "CREATE TABLE `" << this->table_name << '`' << ' ' << '(';
-    for_each_tuple(this->columns, [&](auto const& col) {
-      ss << '\n' << ' ' << ' ' << col.getSchema();
-      if (++i < std::tuple_size<decltype(this->columns)>())
-        ss << ',';
-    });
-    ss << '\n' << ')';
-    return ss.str();
+    return "CREATE TABLE `" + this->table_name + "` (" +
+           tupleFoldl(
+               [](auto const& acc, auto const& column) {
+                 if constexpr (acc.empty())
+                   return "\n  " + column.getSchema();
+                 else
+                   return acc + ",\n  " + column.getSchema();
+               },
+               CompileString<0>{""},
+               this->columns);
   }
 
-  std::string const& getName() const noexcept
+  constexpr auto getName() const noexcept
   {
     return this->table_name;
   }
 
   /** Returns a query to select all fields from the table.
    */
-  auto getAll(MYSQL& mysql) const
+  constexpr auto getAll(MYSQL& mysql) const
   {
     return GetAll<Table,
                   meta::MapValue_v<meta::ColumnAttributeGetter, Columns>...>(
@@ -84,14 +85,14 @@ public:
   /** Returns a query to select some fields from the table.
    */
   template <auto... Attrs>
-  auto getAll(MYSQL& mysql) const
+  constexpr auto getAll(MYSQL& mysql) const
   {
     this->checkAttributes<Attrs...>();
     return GetAll<Table, Attrs...>(mysql, *this);
   }
 
   template <auto... Attrs>
-  auto insertAllBut(MYSQL& mysql, model_type const* model = nullptr) const
+  constexpr auto insertAllBut(MYSQL& mysql, model_type const* model = nullptr) const
   {
     this->checkAttributes<Attrs...>();
     using PackType = meta::RemoveValueOccurences_t<
@@ -103,7 +104,7 @@ public:
 
   /** Returns a query to insert all fields into the table.
    */
-  auto insert(MYSQL& mysql, model_type const* model = nullptr) const
+  constexpr auto insert(MYSQL& mysql, model_type const* model = nullptr) const
   {
     return Insert<Table,
                   meta::MapValue_v<meta::ColumnAttributeGetter, Columns>...>(
@@ -111,7 +112,7 @@ public:
   }
 
   template <auto... Vs>
-  auto insert(meta::ValuePack<Vs...>,
+  constexpr auto insert(meta::ValuePack<Vs...>,
               MYSQL& mysql,
               model_type const* model) const
   {
@@ -122,25 +123,25 @@ public:
   /** Returns a query to insert some fields into the table.
    */
   template <auto... Attrs>
-  auto insert(MYSQL& mysql, model_type const* model = nullptr) const
+  constexpr auto insert(MYSQL& mysql, model_type const* model = nullptr) const
   {
     this->checkAttributes<Attrs...>();
     return Insert<Table, Attrs...>(mysql, *this, model);
   }
 
-  /** Returns a stringstream with the select query for specified fields.
+  /** Returns a CompileString with the select query for specified fields.
    */
   template <auto... Attrs>
-  std::stringstream selectss() const
+  constexpr auto selectCS() const
   {
     this->checkAttributes<Attrs...>();
     return SelectQueryBuilder<void, Attrs...>::select(*this);
   }
 
-  /** Returns a stringstream with the insert query for specified fields.
+  /** Returns a CompileString with the insert query for specified fields.
    */
   template <auto... Attrs>
-  std::stringstream insertss() const
+  constexpr auto insertCS() const
   {
     this->checkAttributes<Attrs...>();
     return InsertQueryBuilder<void, Attrs...>::insert(*this);
@@ -157,14 +158,17 @@ public:
     return std::get<Column_t>(this->columns);
   }
 
-  size_t getNbColumns() const noexcept
+  constexpr size_t getNbColumns() const noexcept
   {
     return sizeof...(Columns);
   }
 
 private:
+  template <std::size_t N>
+  using CompileString = compile_string::CompileString<N>;
+
   template <auto... Attrs>
-  void checkAttributes() const noexcept
+  constexpr void checkAttributes() const noexcept
   {
     using AttrsPack = meta::ValuePack<
         meta::MapValue_v<meta::ColumnAttributeGetter, Columns>...>;
@@ -172,46 +176,42 @@ private:
                   "Failed to find attribute");
   }
 
-  /** Returns a stringstream with a SELECT query for the given attributes.
+  /** Returns a CompileString with a SELECT query for the given attributes.
    */
   template <typename Dummy = void, auto... Attrs>
   struct SelectQueryBuilder
   {
-    static std::stringstream select(Table const& t)
+    constexpr static auto select(Table const& t)
     {
-      auto ss = std::stringstream{};
-
-      ss << "SELECT " << details::ColumnNamesJoiner<Table, Attrs...>::join(t)
-         << ' ';
-      ss << "FROM `" << t.table_name << '`';
-      return ss;
+      return "SELECT " + details::ColumnNamesJoiner<Table, Attrs...>::join(t) +
+             " " + "FROM `" + t.table_name + "`";
     }
   };
 
-  /** Returns a stringstream with a INSERT query for the given attributes.
+  /** Returns a CompileString with a INSERT query for the given attributes.
    */
   template <typename Dummy = void, auto... Attrs>
   struct InsertQueryBuilder
   {
-    static std::stringstream insert(Table const& t)
+    constexpr static auto insert(Table const& t)
     {
-      auto ss = std::stringstream{};
-
-      ss << "INSERT INTO `" << t.table_name << '`' << ' ' << '('
-         << details::ColumnNamesJoiner<Table, Attrs...>::join(t)
-         << ") VALUES (";
-      for (auto i = std::size_t{0}; i < sizeof...(Attrs); ++i)
-      {
-        if (i)
-          ss << ',' << ' ';
-        ss << '?';
-      }
-      ss << ')';
-      return ss;
+      return "INSERT INTO `" + t.table_name + '`' + ' ' + '(' +
+             details::ColumnNamesJoiner<Table, Attrs...>::join(t) +
+             ") VALUES (" +
+             tupleFoldl(
+                 [](auto const& acc, auto const&) {
+                   if constexpr (acc.empty())
+                     return compile_string::CompileString{"?"};
+                   else
+                     return acc + ", ?";
+                 },
+                 CompileString<0>{""},
+                 t.columns) +
+             ')';
     }
   };
 
-  std::string const table_name;
+  CompileString<NAME_SIZE - 1> table_name;
   std::tuple<Columns...> columns;
 };
 
@@ -227,10 +227,10 @@ private:
  * The return value is left opaque to the user and should at best be stored in
  * a type-deduced value (`auto`).
  */
-template <typename... Columns>
-auto make_table(std::string name, Columns&&... cols)
+template <typename... Columns, std::size_t name_size>
+constexpr auto make_table(char const (&name)[name_size], Columns&&... cols)
 {
-  return Table<Columns...>{std::move(name), std::forward<Columns>(cols)...};
+  return Table<name_size, Columns...>{name, std::forward<Columns>(cols)...};
 }
 }
 

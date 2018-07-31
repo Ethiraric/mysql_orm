@@ -19,35 +19,33 @@ public:
   using model_type = typename Table::model_type;
   static inline constexpr auto query_type{QueryType::Delete};
 
-  Delete(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{t}
+  constexpr Delete(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{t}
   {
   }
-  Delete(Delete const& b) noexcept = default;
-  Delete(Delete&& b) noexcept = default;
+  constexpr Delete(Delete const& b) noexcept = default;
+  constexpr Delete(Delete&& b) noexcept = default;
   ~Delete() noexcept = default;
 
-  Delete& operator=(Delete const& rhs) noexcept = default;
-  Delete& operator=(Delete&& rhs) noexcept = default;
+  constexpr Delete& operator=(Delete const& rhs) noexcept = default;
+  constexpr Delete& operator=(Delete&& rhs) noexcept = default;
 
-  std::string buildquery() const
+  constexpr auto buildquery() const noexcept
   {
-    return this->buildqueryss().str();
+    return this->buildqueryCS();
   }
 
-  std::stringstream buildqueryss() const
+  constexpr auto buildqueryCS() const noexcept
   {
-    auto ss = std::stringstream{};
-    ss << "DELETE FROM `" << this->table.get().getName() << "`";
-    return ss;
+    return "DELETE FROM `" + this->table.get().getName() + "`";
   }
 
-  Statement<Delete, model_type> build() const
+  constexpr Statement<Delete, model_type> build() const
   {
     return Statement<Delete, model_type>{*this->mysql_handle, *this};
   }
 
   template <typename Condition>
-  WhereQuery<Delete, Table, Condition> operator()(Where<Condition> where)
+  constexpr WhereQuery<Delete, Table, Condition> operator()(Where<Condition> where)
   {
     return WhereQuery<Delete, Table, Condition>{*this->mysql_handle,
                                                 *this,
@@ -56,7 +54,7 @@ public:
   }
 
   template <typename Limit>
-  LimitQuery<Delete, Table, Limit> operator()(Limit limit)
+  constexpr LimitQuery<Delete, Table, Limit> operator()(Limit limit)
   {
     return LimitQuery<Delete, Table, Limit>{
         *this->mysql_handle, *this, this->table.get(), std::move(limit)};
@@ -67,16 +65,23 @@ public:
     return this->build().execute();
   }
 
-  size_t getNbInputSlots() const noexcept
+  static constexpr size_t getNbInputSlots() noexcept
   {
     return 0;
   }
 
-  void bindInTo(InputBindArray&) const noexcept
+  static constexpr size_t getNbOutputSlots() noexcept
+  {
+    return 0;
+  }
+
+  template <std::size_t NBINDS>
+  constexpr void bindInTo(InputBindArray<NBINDS>&) const noexcept
   {
   }
 
-  void rebindStdTmReferences(InputBindArray&) const noexcept
+  template <std::size_t NBINDS>
+  constexpr void rebindStdTmReferences(InputBindArray<NBINDS>&) const noexcept
   {
   }
 

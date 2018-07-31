@@ -64,7 +64,7 @@ public:
   SetQueryImpl& operator=(SetQueryImpl&& rhs) noexcept = default;
 
   template <typename Condition>
-  auto operator()(Where<Condition> where)
+  constexpr auto operator()(Where<Condition> where) noexcept
   {
     using ContinuationType = QueryContinuation<Query, Table, SetQueryImpl>;
     return WhereQuery<ContinuationType, Table, Condition>{
@@ -74,26 +74,26 @@ public:
         std::move(where.condition)};
   }
 
-  std::stringstream buildqueryss() const
+  constexpr auto buildqueryCS() const noexcept
   {
-    auto ss = this->query.buildqueryss();
-    ss << " SET ";
-    this->assignments.appendToQuery(ss, this->table.get());
-    return ss;
+    return this->assignments.appendToQuery(this->query.buildqueryCS() + " SET ",
+                                           this->table.get());
   }
 
-  size_t getNbInputSlots() const noexcept
+  constexpr static  size_t getNbInputSlots() noexcept
   {
-    return this->query.getNbInputSlots() + this->assignments.getNbInputSlots();
+    return Query::getNbInputSlots() + Assignments::getNbInputSlots();
   }
 
-  void bindInTo(InputBindArray& binds) const noexcept
+  template <std::size_t NBINDS>
+  void bindInTo(InputBindArray<NBINDS>& binds) const noexcept
   {
     this->query.bindInTo(binds);
     this->assignments.bindInTo(binds, this->query.getNbInputSlots());
   }
 
-  void rebindStdTmReferences(InputBindArray& ins) const noexcept
+  template <std::size_t NBINDS>
+  void rebindStdTmReferences(InputBindArray<NBINDS>& ins) const noexcept
   {
     this->query.rebindStdTmReferences(ins);
     this->assignments.rebindStdTmReferences(ins, this->query.getNbInputSlots());

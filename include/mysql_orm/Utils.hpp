@@ -52,6 +52,24 @@ struct ColumnModel
 
 template <typename... Columns>
 using ColumnModel_t = typename ColumnModel<Columns...>::type;
+
+namespace details
+{
+template <size_t idx, typename F, typename Acc,  typename... Ts>
+constexpr auto tupleFoldl(F f, Acc const& acc, std::tuple<Ts...> const& t)
+{
+  if constexpr (idx == 0)
+    return f(acc, std::get<0>(t));
+  else
+    return f(tupleFoldl<idx - 1>(f, acc, t), std::get<idx>(t));
+}
+}
+
+template <typename F, typename Init, typename... Ts>
+constexpr auto tupleFoldl(F f, Init const& init, std::tuple<Ts...> const& t)
+{
+  return details::tupleFoldl<sizeof...(Ts) - 1>(f, init, t);
+}
 }
 
 #endif /* !MYSQL_ORM_UTILS_HPP_ */

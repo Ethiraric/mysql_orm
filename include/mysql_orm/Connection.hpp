@@ -45,15 +45,12 @@ public:
   Connection& operator=(Connection const& rhs) noexcept = delete;
   Connection& operator=(Connection&& rhs) noexcept = default;
 
-private:
-  template <typename...>
-  friend class Database;
-
   MYSQL* getHandle() noexcept
   {
     return this->handle.get();
   }
 
+private:
   std::unique_ptr<MYSQL, decltype(&mysql_close)> handle;
 };
 }

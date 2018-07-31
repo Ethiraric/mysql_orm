@@ -1,10 +1,10 @@
 #ifndef MYSQL_ORM_BINDARRAY_HPP_
 #define MYSQL_ORM_BINDARRAY_HPP_
 
+#include <array>
 #include <chrono>
 #include <cstring>
 #include <type_traits>
-#include <vector>
 
 #include <mysql/mysql.h>
 
@@ -28,7 +28,7 @@ constexpr enum_field_types getMySQLIntegralFieldType()
     return MYSQL_TYPE_LONGLONG;
 }
 
-inline MYSQL_TIME toMySQLTime(std::tm const& tm) noexcept
+inline constexpr MYSQL_TIME toMySQLTime(std::tm const& tm) noexcept
 {
   auto ret = MYSQL_TIME{};
   // tm_year is the number of years since 1900.
@@ -70,24 +70,25 @@ inline void freeBindIfTime(MYSQL_BIND& bind)
  *
  * Has utility methods to bind values.
  */
+template <std::size_t NBINDS>
 class InputBindArray
 {
 public:
-  explicit InputBindArray(std::size_t nbinds) noexcept : binds(nbinds)
+  constexpr explicit InputBindArray() noexcept : binds{}
   {
-    std::memset(&this->binds[0], 0, sizeof(MYSQL_BIND) * nbinds);
+    std::memset(&this->binds[0], 0, sizeof(MYSQL_BIND) * NBINDS);
   }
 
-  InputBindArray(InputBindArray const& b) = default;
-  InputBindArray(InputBindArray&& b) noexcept = default;
+  constexpr InputBindArray(InputBindArray const& b) = default;
+  constexpr InputBindArray(InputBindArray&& b) noexcept = default;
   ~InputBindArray() noexcept
   {
     for (auto& bind : this->binds)
       details::freeBindIfTime(bind);
   }
 
-  InputBindArray& operator=(InputBindArray const& rhs) = default;
-  InputBindArray& operator=(InputBindArray&& rhs) noexcept = default;
+  constexpr InputBindArray& operator=(InputBindArray const& rhs) = default;
+  constexpr InputBindArray& operator=(InputBindArray&& rhs) noexcept = default;
 
   template <typename T>
   void bind(std::size_t idx, T const& value)
@@ -152,18 +153,18 @@ public:
     }
   }
 
-  bool empty() const noexcept
+  constexpr bool empty() const noexcept
   {
     return this->binds.empty();
   }
 
-  MYSQL_BIND const* data() const noexcept
+  constexpr MYSQL_BIND const* data() const noexcept
   {
     return this->binds.data();
   }
 
 private:
-  std::vector<MYSQL_BIND> binds;
+  std::array<MYSQL_BIND, NBINDS> binds;
 };
 
 /** Managed array of input `MYSQL_BIND`s.
@@ -174,14 +175,15 @@ private:
  * The `finalize` method resizes to correct sizes once the query has been
  * executed (using the lengths).
  */
+template <std::size_t NBINDS>
 class OutputBindArray
 {
 public:
-  explicit OutputBindArray(std::size_t nbinds) noexcept
-    : binds(nbinds), lengths(nbinds), is_null(nbinds), error(nbinds)
+  constexpr explicit OutputBindArray() noexcept
+    : binds(), lengths(), is_null(), error()
   {
-    std::memset(&this->binds[0], 0, sizeof(MYSQL_BIND) * nbinds);
-    for (auto i = std::size_t{0}; i < nbinds; ++i)
+    std::memset(&this->binds[0], 0, sizeof(MYSQL_BIND) * NBINDS);
+    for (auto i = std::size_t{0}; i < NBINDS; ++i)
     {
       this->binds[i].length = &this->lengths[i];
       this->binds[i].is_null = &this->is_null[i];
@@ -189,16 +191,16 @@ public:
     }
   }
 
-  OutputBindArray(OutputBindArray const& b) = default;
-  OutputBindArray(OutputBindArray&& b) noexcept = default;
+  constexpr OutputBindArray(OutputBindArray const& b) = default;
+  constexpr OutputBindArray(OutputBindArray&& b) noexcept = default;
   ~OutputBindArray() noexcept
   {
     for (auto& bind : this->binds)
       details::freeBindIfTime(bind);
   }
 
-  OutputBindArray& operator=(OutputBindArray const& rhs) = default;
-  OutputBindArray& operator=(OutputBindArray&& rhs) noexcept = default;
+  constexpr OutputBindArray& operator=(OutputBindArray const& rhs) = default;
+  constexpr OutputBindArray& operator=(OutputBindArray&& rhs) noexcept = default;
 
   template <std::size_t varchar_size, typename T>
   void bind(std::size_t idx, T& value)
@@ -321,36 +323,36 @@ public:
       (void)(idx);
   }
 
-  bool empty() const noexcept
+  constexpr bool empty() const noexcept
   {
     return this->binds.empty();
   }
 
-  MYSQL_BIND const* data() const noexcept
+  constexpr MYSQL_BIND const* data() const noexcept
   {
     return this->binds.data();
   }
 
-  unsigned long length(std::size_t idx) const noexcept
+  constexpr unsigned long length(std::size_t idx) const noexcept
   {
     return this->lengths[idx];
   }
 
-  bool isNull(std::size_t idx) const noexcept
+  constexpr bool isNull(std::size_t idx) const noexcept
   {
     return this->is_null[idx];
   }
 
-  bool hasErrored(std::size_t idx) const noexcept
+  constexpr bool hasErrored(std::size_t idx) const noexcept
   {
     return this->error[idx];
   }
 
 private:
-  std::vector<MYSQL_BIND> binds;
-  std::vector<unsigned long> lengths;
-  std::vector<my_bool> is_null;
-  std::vector<my_bool> error;
+  std::array<MYSQL_BIND, NBINDS> binds;
+  std::array<unsigned long, NBINDS> lengths;
+  std::array<my_bool, NBINDS> is_null;
+  std::array<my_bool, NBINDS> error;
 };
 }
 

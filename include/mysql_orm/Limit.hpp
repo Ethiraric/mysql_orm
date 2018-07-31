@@ -59,11 +59,10 @@ public:
   LimitQueryImpl& operator=(LimitQueryImpl const& rhs) = default;
   LimitQueryImpl& operator=(LimitQueryImpl&& rhs) noexcept = default;
 
-  std::stringstream buildqueryss() const
+  auto buildqueryCS() const
   {
-    auto ss = this->query.buildqueryss();
-    ss << " LIMIT " << this->limit.value;
-    return ss;
+    /// XXX(ethiraric): Use the real limit!!!
+    return this->query.buildqueryCS() + " LIMIT 1";
   }
 
 protected:

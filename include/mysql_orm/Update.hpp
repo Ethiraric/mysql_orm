@@ -19,25 +19,24 @@ public:
   using model_type = typename Table::model_type;
   static inline constexpr auto query_type{QueryType::Update};
 
-  Update(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{t}
+  constexpr Update(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{t}
   {
   }
-  Update(Update const& b) noexcept = default;
-  Update(Update&& b) noexcept = default;
+  constexpr Update(Update const& b) noexcept = default;
+  constexpr Update(Update&& b) noexcept = default;
   ~Update() noexcept = default;
 
-  Update& operator=(Update const& rhs) noexcept = default;
-  Update& operator=(Update&& rhs) noexcept = default;
+  constexpr Update& operator=(Update const& rhs) noexcept = default;
+  constexpr Update& operator=(Update&& rhs) noexcept = default;
 
-  std::stringstream buildqueryss() const
+  constexpr auto buildqueryCS() const
   {
-    auto ss = std::stringstream{};
-    ss << "UPDATE `" << this->table.get().getName() << "`";
-    return ss;
+    return "UPDATE `" + this->table.get().getName() + "`";
   }
 
   template <typename Assignments>
-  SetQuery<Update, Table, Assignments> operator()(Set<Assignments> set)
+  constexpr SetQuery<Update, Table, Assignments> operator()(
+      Set<Assignments> set)
   {
     return SetQuery<Update, Table, Assignments>{*this->mysql_handle,
                                                 *this,
@@ -50,16 +49,23 @@ public:
     return this->build().execute();
   }
 
-  size_t getNbInputSlots() const noexcept
+  constexpr static size_t getNbOutputSlots() noexcept
   {
     return 0;
   }
 
-  void bindInTo(InputBindArray&) const noexcept
+  constexpr static size_t getNbInputSlots() noexcept
+  {
+    return 0;
+  }
+
+  template <std::size_t NBINDS>
+  constexpr void bindInTo(InputBindArray<NBINDS>&) const noexcept
   {
   }
 
-  void rebindStdTmReferences(InputBindArray&) const noexcept
+  template <std::size_t NBINDS>
+  constexpr void rebindStdTmReferences(InputBindArray<NBINDS>&) const noexcept
   {
   }
 

@@ -26,8 +26,8 @@ public:
     : mysql_handle{&mysql},
       orm_query{std::move(pquery)},
       sql_query{this->orm_query.buildquery()},
-      in_binds{this->orm_query.getNbInputSlots()},
-      out_binds(this->getNbOutputSlots()),
+      in_binds{},
+      out_binds{},
       stmt{nullptr, &mysql_stmt_close}
   {
     this->stmt.reset(mysql_stmt_init(this->mysql_handle));
@@ -98,10 +98,10 @@ public:
   }
 
 private:
-  size_t getNbOutputSlots() const noexcept
+  constexpr static size_t getNbOutputSlots() noexcept
   {
     if constexpr (query_type == QueryType::GetAll)
-      return this->orm_query.getNbOutputSlots();
+      return Query::getNbOutputSlots();
     else
       return 0;
   }
@@ -131,8 +131,8 @@ private:
   Model temp;
   Query orm_query;
   std::string sql_query;
-  InputBindArray in_binds;
-  OutputBindArray out_binds;
+  InputBindArray<Query::getNbInputSlots()> in_binds;
+  OutputBindArray<Query::getNbOutputSlots()> out_binds;
   std::unique_ptr<MYSQL_STMT, decltype(&mysql_stmt_close)> stmt;
 };
 }

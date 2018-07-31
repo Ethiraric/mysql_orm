@@ -4,6 +4,8 @@
 #include <sstream>
 #include <utility>
 
+#include <CompileString/CompileString.hpp>
+
 #include <mysql_orm/Limit.hpp>
 #include <mysql_orm/Statement.hpp>
 #include <mysql_orm/WhereConditionDSL.hpp>
@@ -24,14 +26,15 @@ template <typename Condition>
 struct Where
 {
 public:
-  Where(Condition&& c) noexcept : condition{std::move(c)}
+  constexpr Where(Condition&& c) noexcept : condition{std::move(c)}
   {
   }
 
-  template <typename Table>
-  void appendToQuery(std::ostream& out, Table const& t) const
+  template <typename Table, std::size_t T>
+  constexpr auto appendToQuery(compile_string::CompileString<T> const& query,
+                               Table const& t) const noexcept
   {
-    this->condition.appendToQuery(out, t);
+    return this->condition.appendToQuery(query, t);
   }
 
   Condition condition;
@@ -57,30 +60,28 @@ public:
   using model_type = typename Query::model_type;
   static inline constexpr auto query_type{Query::query_type};
 
-  WhereQueryImpl(MYSQL& mysql, Query q, Table const& t, Condition&& c) noexcept
+  constexpr WhereQueryImpl(MYSQL& mysql, Query q, Table const& t, Condition&& c) noexcept
     : mysql_handle{&mysql},
       query{std::move(q)},
       table{t},
       condition{std::move(c)}
   {
   }
-  WhereQueryImpl(WhereQueryImpl const& b) = default;
-  WhereQueryImpl(WhereQueryImpl&& b) noexcept = default;
+  constexpr WhereQueryImpl(WhereQueryImpl const& b) = default;
+  constexpr WhereQueryImpl(WhereQueryImpl&& b) noexcept = default;
   ~WhereQueryImpl() noexcept = default;
 
-  WhereQueryImpl& operator=(WhereQueryImpl const& rhs) = default;
-  WhereQueryImpl& operator=(WhereQueryImpl&& rhs) noexcept = default;
+  constexpr WhereQueryImpl& operator=(WhereQueryImpl const& rhs) = default;
+  constexpr WhereQueryImpl& operator=(WhereQueryImpl&& rhs) noexcept = default;
 
-  std::stringstream buildqueryss() const
+  constexpr auto buildqueryCS() const noexcept
   {
-    auto ss = this->query.buildqueryss();
-    ss << " WHERE ";
-    this->condition.appendToQuery(ss, this->table.get());
-    return ss;
+    return this->condition.appendToQuery(this->query.buildqueryCS() + " WHERE ",
+                                         this->table.get());
   }
 
   template <typename Limit>
-  auto operator()(Limit limit)
+  constexpr auto operator()(Limit limit)
   {
     using ContinuationType = QueryContinuation<Query, Table, WhereQueryImpl>;
     return LimitQuery<ContinuationType, Table, Limit>{
@@ -90,18 +91,20 @@ public:
         std::move(limit)};
   }
 
-  size_t getNbInputSlots() const noexcept
+  static constexpr size_t getNbInputSlots() noexcept
   {
-    return this->query.getNbInputSlots() + this->condition.getNbInputSlots();
+    return Query::getNbInputSlots() + Condition::getNbInputSlots();
   }
 
-  void bindInTo(InputBindArray& binds) const noexcept
+  template <std::size_t NBINDS>
+  void bindInTo(InputBindArray<NBINDS>& binds) const noexcept
   {
     this->query.bindInTo(binds);
     this->condition.bindInTo(binds, this->query.getNbInputSlots());
   }
 
-  void rebindStdTmReferences(InputBindArray& ins) const noexcept
+  template <std::size_t NBINDS>
+  void rebindStdTmReferences(InputBindArray<NBINDS>& ins) const noexcept
   {
     this->query.rebindStdTmReferences(ins);
     this->condition.rebindStdTmReferences(ins, this->query.getNbInputSlots());
