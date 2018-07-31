@@ -22,6 +22,8 @@ class Statement
 public:
   static inline constexpr auto query_type{Query::query_type};
 
+  using SQLQueryType = decltype(std::declval<Query>().buildquery());
+
   Statement(MYSQL& mysql, Query pquery)
     : mysql_handle{&mysql},
       orm_query{std::move(pquery)},
@@ -130,7 +132,7 @@ private:
   MYSQL* mysql_handle;
   Model temp;
   Query orm_query;
-  std::string sql_query;
+  SQLQueryType sql_query;
   InputBindArray<Query::getNbInputSlots()> in_binds;
   OutputBindArray<Query::getNbOutputSlots()> out_binds;
   std::unique_ptr<MYSQL_STMT, decltype(&mysql_stmt_close)> stmt;
