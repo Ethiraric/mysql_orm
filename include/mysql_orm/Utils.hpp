@@ -55,7 +55,7 @@ using ColumnModel_t = typename ColumnModel<Columns...>::type;
 
 namespace details
 {
-template <size_t idx, typename F, typename Acc,  typename... Ts>
+template <size_t idx, typename F, typename Acc, typename... Ts>
 constexpr auto tupleFoldl(F f, Acc const& acc, std::tuple<Ts...> const& t)
 {
   if constexpr (idx == 0)

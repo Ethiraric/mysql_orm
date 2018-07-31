@@ -80,7 +80,8 @@ struct AssignmentList
   }
 
   template <std::size_t NBINDS>
-  void rebindStdTmReferences(InputBindArray<NBINDS>&, std::size_t) const noexcept
+  void rebindStdTmReferences(InputBindArray<NBINDS>&, std::size_t) const
+      noexcept
   {
   }
 
@@ -122,7 +123,8 @@ struct Assignment
   }
 
   template <std::size_t NBINDS>
-  void rebindStdTmReferences(InputBindArray<NBINDS>&, std::size_t) const noexcept
+  void rebindStdTmReferences(InputBindArray<NBINDS>&, std::size_t) const
+      noexcept
   {
   }
 
@@ -157,7 +159,8 @@ struct OperandWrapper
   }
 
   template <std::size_t NBINDS>
-  void rebindStdTmReferences(InputBindArray<NBINDS>&, std::size_t) const noexcept
+  void rebindStdTmReferences(InputBindArray<NBINDS>&, std::size_t) const
+      noexcept
   {
   }
 
@@ -223,14 +226,15 @@ struct OperatorClosure
   }
 
   template <std::size_t NBINDS>
-  void bindInTo(InputBindArray<NBINDS>& binds, std::size_t idx) const 
+  void bindInTo(InputBindArray<NBINDS>& binds, std::size_t idx) const
   {
     this->lhs.bindInTo(binds, idx);
     this->rhs.bindInTo(binds, idx + lhs.getNbInputSlots());
   }
 
   template <std::size_t NBINDS>
-  void rebindStdTmReferences(InputBindArray<NBINDS>& binds, std::size_t idx) const
+  void rebindStdTmReferences(InputBindArray<NBINDS>& binds,
+                             std::size_t idx) const
   {
     this->lhs.rebindStdTmReferences(binds, idx);
     this->rhs.rebindStdTmReferences(binds, idx + lhs.getNbInputSlots());
@@ -261,7 +265,8 @@ struct c
   static inline constexpr auto attribute = attr;
 
   template <std::size_t N, typename Table>
-  auto appendToQuery(CompileString<N> const& query, Table const& t) const noexcept
+  auto appendToQuery(CompileString<N> const& query, Table const& t) const
+      noexcept
   {
     return query + "`" + t.template getColumn<attr>().getName() + "`";
   }
@@ -277,7 +282,8 @@ struct c
   }
 
   template <std::size_t NBINDS>
-  void rebindStdTmReferences(InputBindArray<NBINDS>&, std::size_t) const noexcept
+  void rebindStdTmReferences(InputBindArray<NBINDS>&, std::size_t) const
+      noexcept
   {
   }
 

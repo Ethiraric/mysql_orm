@@ -24,6 +24,7 @@ class Database
 {
   template <std::size_t N>
   using CompileString = compile_string::CompileString<N>;
+
 public:
   constexpr Database(MYSQL* hdl, Tables&&... tabls)
     : handle{hdl}, tables{std::forward_as_tuple(tabls...)}

@@ -87,8 +87,7 @@ struct ColumnConstraints
               return acc;
           }();
 
-          if constexpr (std::is_same_v<decltype(iter), T0> &&
-                        unique())
+          if constexpr (std::is_same_v<decltype(iter), T0> && unique())
             return tmpstr + "UNIQUE";
           else if constexpr (std::is_same_v<decltype(iter), T1> &&
                              nullable() == Tristate::Off)

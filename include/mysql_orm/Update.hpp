@@ -19,7 +19,8 @@ public:
   using model_type = typename Table::model_type;
   static inline constexpr auto query_type{QueryType::Update};
 
-  constexpr Update(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{&t}
+  constexpr Update(MYSQL& mysql, Table const& t) noexcept
+    : mysql_handle{&mysql}, table{&t}
   {
   }
   constexpr Update(Update const& b) noexcept = default;
@@ -38,10 +39,8 @@ public:
   constexpr SetQuery<Update, Table, Assignments> operator()(
       Set<Assignments> set)
   {
-    return SetQuery<Update, Table, Assignments>{*this->mysql_handle,
-                                                *this,
-                                                *this->table,
-                                                std::move(set.assignments)};
+    return SetQuery<Update, Table, Assignments>{
+        *this->mysql_handle, *this, *this->table, std::move(set.assignments)};
   }
 
   auto operator()()

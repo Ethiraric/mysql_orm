@@ -19,7 +19,9 @@ public:
   using model_type = typename Table::model_type;
   static inline constexpr auto query_type{QueryType::Insert};
 
-  constexpr Insert(MYSQL& mysql, Table const& t, model_type const* to_insert) noexcept
+  constexpr Insert(MYSQL& mysql,
+                   Table const& t,
+                   model_type const* to_insert) noexcept
     : mysql_handle{&mysql}, table{&t}, model_to_insert{to_insert}
   {
   }
@@ -64,7 +66,8 @@ public:
   }
 
   template <std::size_t NBINDS>
-  void bindInsert(model_type const& model, InputBindArray<NBINDS>& binds) const noexcept
+  void bindInsert(model_type const& model, InputBindArray<NBINDS>& binds) const
+      noexcept
   {
     auto i = std::size_t{0};
     (binds.bind(i++, model.*Attrs), ...);

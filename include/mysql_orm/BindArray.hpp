@@ -200,7 +200,8 @@ public:
   }
 
   constexpr OutputBindArray& operator=(OutputBindArray const& rhs) = default;
-  constexpr OutputBindArray& operator=(OutputBindArray&& rhs) noexcept = default;
+  constexpr OutputBindArray& operator=(OutputBindArray&& rhs) noexcept =
+      default;
 
   template <std::size_t varchar_size, typename T>
   void bind(std::size_t idx, T& value)

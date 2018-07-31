@@ -116,9 +116,7 @@ TEST_CASE("[Where] Simple Where", "[Where]")
   SECTION("Raw char const* string")
   {
     auto const res =
-        d.getAll<Record>()(Where{c<&Record::s>{} == "one"})
-            .build()
-            .execute();
+        d.getAll<Record>()(Where{c<&Record::s>{} == "one"}).build().execute();
     static_assert(
         std::is_same_v<std::remove_cv_t<decltype(res)>, std::vector<Record>>,
         "Wrong return type");

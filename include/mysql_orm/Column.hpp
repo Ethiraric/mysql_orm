@@ -89,16 +89,15 @@ public:
       columnConstraintsFromPack(BaseConstraintsPack{}).nullable() ==
           Tristate::Undefined,
       std::conditional_t<std::is_same_v<field_type, lifted_field_type>,
-                       meta::AppendPack_t<BaseConstraintsPack, NotNull>,
-                       meta::AppendPack_t<BaseConstraintsPack, Nullable>>,
+                         meta::AppendPack_t<BaseConstraintsPack, NotNull>,
+                         meta::AppendPack_t<BaseConstraintsPack, Nullable>>,
       BaseConstraintsPack>;
 
   static inline constexpr auto attribute = attr;
   static inline constexpr auto is_optional = meta::IsOptional_v<Field>;
   static inline constexpr auto varchar_size = VARCHAR_SIZE;
 
-  constexpr Column(char const (&name)[NAME_SIZE]) noexcept
-    : column_name{name}
+  constexpr Column(char const (&name)[NAME_SIZE]) noexcept : column_name{name}
   {
     if constexpr (varchar_size > 0 &&
                   !(std::is_same_v<lifted_field_type, std::string> ||
@@ -117,8 +116,7 @@ public:
    */
   constexpr auto getSchema() const
   {
-    auto tagstr =
-        columnConstraintsFromPack(ConstraintsPack{}).toString();
+    auto tagstr = columnConstraintsFromPack(ConstraintsPack{}).toString();
     auto schema = '`' + this->getName() + '`' + ' ';
     auto schema2 = [&]() {
       if constexpr (varchar_size > 0)

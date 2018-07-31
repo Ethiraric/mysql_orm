@@ -52,7 +52,8 @@ TEST_CASE("Create fields", "[Column]")
       }
       SECTION("mysql_orm::id_t")
       {
-        constexpr auto c = mysql_orm::make_column<&RecordWithOptionals::id>("id");
+        constexpr auto c =
+            mysql_orm::make_column<&RecordWithOptionals::id>("id");
         REQUIRE(c.getSchema() == "`id` INTEGER UNSIGNED");
       }
     }
@@ -70,20 +71,22 @@ TEST_CASE("Create fields", "[Column]")
 
     SECTION("Unique")
     {
-      constexpr auto c = mysql_orm::make_column<&MixedRecord::id>(
-          "id", Unique{});
+      constexpr auto c =
+          mysql_orm::make_column<&MixedRecord::id>("id", Unique{});
       REQUIRE(c.getSchema() == "`id` INTEGER UNSIGNED UNIQUE NOT NULL");
     }
 
     SECTION("Nullable non-optional")
     {
-      constexpr auto c = mysql_orm::make_column<&MixedRecord::i>("i", Nullable{});
+      constexpr auto c =
+          mysql_orm::make_column<&MixedRecord::i>("i", Nullable{});
       REQUIRE(c.getSchema() == "`i` INTEGER");
     }
 
     SECTION("Non-null optional")
     {
-      constexpr auto c = mysql_orm::make_column<&MixedRecord::s>("foo", NotNull{});
+      constexpr auto c =
+          mysql_orm::make_column<&MixedRecord::s>("foo", NotNull{});
       REQUIRE(c.getSchema() == "`foo` TEXT NOT NULL");
     }
   }

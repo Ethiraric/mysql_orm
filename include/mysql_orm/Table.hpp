@@ -13,8 +13,8 @@
 
 #include <mysql_orm/Column.hpp>
 #include <mysql_orm/ColumnNamesJoiner.hpp>
-#include <mysql_orm/Insert.hpp>
 #include <mysql_orm/GetAll.hpp>
+#include <mysql_orm/Insert.hpp>
 #include <mysql_orm/Utils.hpp>
 #include <mysql_orm/meta/ColumnAttributeGetter.hpp>
 #include <mysql_orm/meta/FindMapped.hpp>
@@ -65,7 +65,8 @@ public:
                    return acc + ",\n  " + column.getSchema();
                },
                CompileString<0>{""},
-               this->columns) + "\n)";
+               this->columns) +
+           "\n)";
   }
 
   constexpr auto getName() const noexcept
@@ -92,7 +93,8 @@ public:
   }
 
   template <auto... Attrs>
-  constexpr auto insertAllBut(MYSQL& mysql, model_type const* model = nullptr) const
+  constexpr auto insertAllBut(MYSQL& mysql,
+                              model_type const* model = nullptr) const
   {
     this->checkAttributes<Attrs...>();
     using PackType = meta::RemoveValueOccurences_t<
@@ -113,8 +115,8 @@ public:
 
   template <auto... Vs>
   constexpr auto insert(meta::ValuePack<Vs...>,
-              MYSQL& mysql,
-              model_type const* model) const
+                        MYSQL& mysql,
+                        model_type const* model) const
   {
     this->checkAttributes<Vs...>();
     return this->insert<Vs...>(mysql, model);

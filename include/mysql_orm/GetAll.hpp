@@ -48,10 +48,8 @@ public:
   constexpr WhereQuery<GetAll, Table, Condition> operator()(
       Where<Condition> where)
   {
-    return WhereQuery<GetAll, Table, Condition>{*this->mysql_handle,
-                                                *this,
-                                                *this->table,
-                                                std::move(where.condition)};
+    return WhereQuery<GetAll, Table, Condition>{
+        *this->mysql_handle, *this, *this->table, std::move(where.condition)};
   }
 
   template <typename Limit>

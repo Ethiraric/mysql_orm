@@ -58,8 +58,10 @@ public:
   constexpr QueryContinuation(QueryContinuation&& b) noexcept = default;
   ~QueryContinuation() noexcept = default;
 
-  constexpr QueryContinuation& operator=(QueryContinuation const& rhs) = default;
-  constexpr QueryContinuation& operator=(QueryContinuation&& rhs) noexcept = default;
+  constexpr QueryContinuation& operator=(QueryContinuation const& rhs) =
+      default;
+  constexpr QueryContinuation& operator=(QueryContinuation&& rhs) noexcept =
+      default;
 
   template <typename T>
   constexpr auto operator()(T&& t) noexcept
@@ -130,21 +132,25 @@ private:
   }
 
   template <typename Q, std::size_t NBINDS>
-  static constexpr auto bindInToImpl(Q const& q, InputBindArray<NBINDS>& binds, int) noexcept
+  static constexpr auto bindInToImpl(Q const& q,
+                                     InputBindArray<NBINDS>& binds,
+                                     int) noexcept
       -> decltype(q.Continuation::bindInTo(binds), void())
   {
     q.Continuation::bindInTo(binds);
   }
   template <typename Q, std::size_t NBINDS>
-  static constexpr void bindInToImpl(Q const& q, InputBindArray<NBINDS>& binds, long) noexcept
+  static constexpr void bindInToImpl(Q const& q,
+                                     InputBindArray<NBINDS>& binds,
+                                     long) noexcept
   {
     q.query.bindInTo(binds);
   }
 
   template <typename Q, std::size_t NBINDS>
   static constexpr auto rebindStdTmReferencesImpl(Q const& q,
-                                        InputBindArray<NBINDS>& ins,
-                                        int) noexcept
+                                                  InputBindArray<NBINDS>& ins,
+                                                  int) noexcept
       -> decltype(q.Continuation::rebindStdTmReferences(ins), void())
   {
     q.Continuation::rebindStdTmReferences(ins);

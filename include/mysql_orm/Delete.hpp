@@ -19,7 +19,8 @@ public:
   using model_type = typename Table::model_type;
   static inline constexpr auto query_type{QueryType::Delete};
 
-  constexpr Delete(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{&t}
+  constexpr Delete(MYSQL& mysql, Table const& t) noexcept
+    : mysql_handle{&mysql}, table{&t}
   {
   }
   constexpr Delete(Delete const& b) noexcept = default;
@@ -45,12 +46,11 @@ public:
   }
 
   template <typename Condition>
-  constexpr WhereQuery<Delete, Table, Condition> operator()(Where<Condition> where)
+  constexpr WhereQuery<Delete, Table, Condition> operator()(
+      Where<Condition> where)
   {
-    return WhereQuery<Delete, Table, Condition>{*this->mysql_handle,
-                                                *this,
-                                                *this->table,
-                                                std::move(where.condition)};
+    return WhereQuery<Delete, Table, Condition>{
+        *this->mysql_handle, *this, *this->table, std::move(where.condition)};
   }
 
   template <typename Limit>

@@ -28,8 +28,7 @@ TEST_CASE("[Delete] Delete buildquery", "[Delete]")
       Connection{"localhost", 3306, "mysql_orm_test", "", "mysql_orm_test_db"};
   auto d = make_database(connection, table_mixed_records, table_records);
 
-  CHECK(d.delete_<MixedRecord>().buildquery() ==
-        "DELETE FROM `mixed_records`");
+  CHECK(d.delete_<MixedRecord>().buildquery() == "DELETE FROM `mixed_records`");
 }
 
 TEST_CASE("[Delete] Delete", "[Delete]")

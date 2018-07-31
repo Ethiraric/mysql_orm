@@ -66,7 +66,7 @@ struct RecordWithTime
 };
 
 inline std::ostream& operator<<(std::ostream& out, RecordWithTime const& record)
-{ 
+{
   // clang-format off
   out << "RecordWithTime{" << record.id << ','
     << record.time.tm_year + 1900 << '-'

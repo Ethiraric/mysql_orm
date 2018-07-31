@@ -60,7 +60,10 @@ public:
   using model_type = typename Query::model_type;
   static inline constexpr auto query_type{Query::query_type};
 
-  constexpr WhereQueryImpl(MYSQL& mysql, Query q, Table const& t, Condition&& c) noexcept
+  constexpr WhereQueryImpl(MYSQL& mysql,
+                           Query q,
+                           Table const& t,
+                           Condition&& c) noexcept
     : mysql_handle{&mysql},
       query{std::move(q)},
       table{&t},

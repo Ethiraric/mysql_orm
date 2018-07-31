@@ -80,7 +80,7 @@ public:
                                            *this->table);
   }
 
-  constexpr static  size_t getNbInputSlots() noexcept
+  constexpr static size_t getNbInputSlots() noexcept
   {
     return Query::getNbInputSlots() + Assignments::getNbInputSlots();
   }
