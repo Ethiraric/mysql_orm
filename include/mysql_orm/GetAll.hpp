@@ -34,7 +34,7 @@ public:
   static inline constexpr auto query_type{QueryType::GetAll};
 
   constexpr GetAll(MYSQL& mysql, Table const& t) noexcept
-    : mysql_handle{&mysql}, table{t}
+    : mysql_handle{&mysql}, table{&t}
   {
   }
   constexpr GetAll(GetAll const& b) noexcept = default;
@@ -50,7 +50,7 @@ public:
   {
     return WhereQuery<GetAll, Table, Condition>{*this->mysql_handle,
                                                 *this,
-                                                this->table.get(),
+                                                *this->table,
                                                 std::move(where.condition)};
   }
 
@@ -58,7 +58,7 @@ public:
   constexpr LimitQuery<GetAll, Table, Limit> operator()(Limit limit)
   {
     return LimitQuery<GetAll, Table, Limit>{
-        *this->mysql_handle, *this, this->table.get(), std::move(limit)};
+        *this->mysql_handle, *this, *this->table, std::move(limit)};
   }
 
   auto operator()()
@@ -73,7 +73,7 @@ public:
 
   constexpr auto buildqueryCS() const noexcept
   {
-    return this->table.get().template selectCS<Attrs...>();
+    return this->table->template selectCS<Attrs...>();
   }
 
   constexpr Statement<GetAll, model_type> build() const
@@ -96,8 +96,7 @@ public:
   {
     auto i = std::size_t{0};
     (binds.template bind<std::remove_reference_t<decltype(
-         table.get().template getColumn<Attrs>())>::varchar_size>(i++,
-                                                                  model.*Attrs),
+         table->template getColumn<Attrs>())>::varchar_size>(i++, model.*Attrs),
      ...);
   }
 
@@ -123,7 +122,7 @@ private:
   // May not be nullptr. Can't use std::reference_wrapper since MYSQL is
   // incomplete.
   MYSQL* mysql_handle;
-  std::reference_wrapper<Table const> table;
+  Table const* table;
 };
 }
 

@@ -170,6 +170,10 @@ struct ref
   template <std::size_t N>
   using CompileString = compile_string::CompileString<N>;
 
+  ref(T& t) noexcept : value{&t}
+  {
+  }
+
   template <std::size_t N, typename Table>
   auto appendToQuery(CompileString<N> const& query, Table const&) const
   {
@@ -184,17 +188,17 @@ struct ref
   template <std::size_t NBINDS>
   void bindInTo(InputBindArray<NBINDS>& binds, std::size_t idx) const
   {
-    binds.bind(idx, this->value.get());
+    binds.bind(idx, *this->value);
   }
 
   template <std::size_t NBINDS>
   void rebindStdTmReferences(InputBindArray<NBINDS>& binds,
                              std::size_t idx) const
   {
-    binds.bind(idx, this->value.get());
+    binds.bind(idx, *this->value);
   }
 
-  std::reference_wrapper<T> value;
+  T* value;
 };
 
 template <typename T>

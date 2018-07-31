@@ -19,7 +19,7 @@ public:
   using model_type = typename Table::model_type;
   static inline constexpr auto query_type{QueryType::Delete};
 
-  constexpr Delete(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{t}
+  constexpr Delete(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{&t}
   {
   }
   constexpr Delete(Delete const& b) noexcept = default;
@@ -36,7 +36,7 @@ public:
 
   constexpr auto buildqueryCS() const noexcept
   {
-    return "DELETE FROM `" + this->table.get().getName() + "`";
+    return "DELETE FROM `" + this->table->getName() + "`";
   }
 
   constexpr Statement<Delete, model_type> build() const
@@ -49,7 +49,7 @@ public:
   {
     return WhereQuery<Delete, Table, Condition>{*this->mysql_handle,
                                                 *this,
-                                                this->table.get(),
+                                                *this->table,
                                                 std::move(where.condition)};
   }
 
@@ -57,7 +57,7 @@ public:
   constexpr LimitQuery<Delete, Table, Limit> operator()(Limit limit)
   {
     return LimitQuery<Delete, Table, Limit>{
-        *this->mysql_handle, *this, this->table.get(), std::move(limit)};
+        *this->mysql_handle, *this, *this->table, std::move(limit)};
   }
 
   auto operator()()
@@ -89,7 +89,7 @@ private:
   // May not be nullptr. Can't use std::reference_wrapper since MYSQL is
   // incomplete.
   MYSQL* mysql_handle;
-  std::reference_wrapper<Table const> table;
+  Table const* table;
 };
 }
 

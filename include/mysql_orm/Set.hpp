@@ -52,7 +52,7 @@ public:
   SetQueryImpl(MYSQL& mysql, Query q, Table const& t, Assignments&& a) noexcept
     : mysql_handle{&mysql},
       query{std::move(q)},
-      table{t},
+      table{&t},
       assignments{std::move(a)}
   {
   }
@@ -70,14 +70,14 @@ public:
     return WhereQuery<ContinuationType, Table, Condition>{
         *this->mysql_handle,
         static_cast<ContinuationType&>(*this),
-        this->table.get(),
+        *this->table,
         std::move(where.condition)};
   }
 
   constexpr auto buildqueryCS() const noexcept
   {
     return this->assignments.appendToQuery(this->query.buildqueryCS() + " SET ",
-                                           this->table.get());
+                                           *this->table);
   }
 
   constexpr static  size_t getNbInputSlots() noexcept
@@ -104,7 +104,7 @@ protected:
   // incomplete.
   MYSQL* mysql_handle;
   Query query;
-  std::reference_wrapper<Table const> table;
+  Table const* table;
 
 private:
   Assignments assignments;

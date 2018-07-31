@@ -20,7 +20,7 @@ public:
   static inline constexpr auto query_type{QueryType::Insert};
 
   constexpr Insert(MYSQL& mysql, Table const& t, model_type const* to_insert) noexcept
-    : mysql_handle{&mysql}, table{t}, model_to_insert{to_insert}
+    : mysql_handle{&mysql}, table{&t}, model_to_insert{to_insert}
   {
   }
   constexpr Insert(Insert const& b) noexcept = default;
@@ -42,7 +42,7 @@ public:
 
   constexpr auto buildqueryCS() const
   {
-    return this->table.get().template insertCS<Attrs...>();
+    return this->table->template insertCS<Attrs...>();
   }
 
   constexpr Statement<Insert, model_type> build() const
@@ -79,7 +79,7 @@ private:
   // May not be nullptr. Can't use std::reference_wrapper since MYSQL is
   // incomplete.
   MYSQL* mysql_handle;
-  std::reference_wrapper<Table const> table;
+  Table const* table;
   model_type const* model_to_insert;
 };
 }

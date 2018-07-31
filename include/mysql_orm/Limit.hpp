@@ -80,7 +80,7 @@ public:
   using model_type = typename Query::model_type;
 
   LimitQueryImpl(MYSQL& mysql, Query q, Table const& t, TLimit&& l) noexcept
-    : mysql_handle{&mysql}, query{std::move(q)}, table{t}, limit{std::move(l)}
+    : mysql_handle{&mysql}, query{std::move(q)}, table{&t}, limit{std::move(l)}
   {
   }
   LimitQueryImpl(LimitQueryImpl const& b) = default;
@@ -106,7 +106,7 @@ protected:
   // incomplete.
   MYSQL* mysql_handle;
   Query query;
-  std::reference_wrapper<Table const> table;
+  Table const* table;
 
 private:
   TLimit limit;

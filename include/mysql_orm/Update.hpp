@@ -19,7 +19,7 @@ public:
   using model_type = typename Table::model_type;
   static inline constexpr auto query_type{QueryType::Update};
 
-  constexpr Update(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{t}
+  constexpr Update(MYSQL& mysql, Table const& t) noexcept : mysql_handle{&mysql}, table{&t}
   {
   }
   constexpr Update(Update const& b) noexcept = default;
@@ -31,7 +31,7 @@ public:
 
   constexpr auto buildqueryCS() const
   {
-    return "UPDATE `" + this->table.get().getName() + "`";
+    return "UPDATE `" + this->table->getName() + "`";
   }
 
   template <typename Assignments>
@@ -40,7 +40,7 @@ public:
   {
     return SetQuery<Update, Table, Assignments>{*this->mysql_handle,
                                                 *this,
-                                                this->table.get(),
+                                                *this->table,
                                                 std::move(set.assignments)};
   }
 
@@ -73,7 +73,7 @@ private:
   // May not be nullptr. Can't use std::reference_wrapper since MYSQL is
   // incomplete.
   MYSQL* mysql_handle;
-  std::reference_wrapper<Table const> table;
+  Table const* table;
 };
 }
 

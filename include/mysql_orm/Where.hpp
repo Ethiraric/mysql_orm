@@ -63,7 +63,7 @@ public:
   constexpr WhereQueryImpl(MYSQL& mysql, Query q, Table const& t, Condition&& c) noexcept
     : mysql_handle{&mysql},
       query{std::move(q)},
-      table{t},
+      table{&t},
       condition{std::move(c)}
   {
   }
@@ -77,7 +77,7 @@ public:
   constexpr auto buildqueryCS() const noexcept
   {
     return this->condition.appendToQuery(this->query.buildqueryCS() + " WHERE ",
-                                         this->table.get());
+                                         *this->table);
   }
 
   template <typename Limit>
@@ -87,7 +87,7 @@ public:
     return LimitQuery<ContinuationType, Table, Limit>{
         *this->mysql_handle,
         static_cast<ContinuationType&>(*this),
-        this->table.get(),
+        *this->table,
         std::move(limit)};
   }
 
@@ -115,7 +115,7 @@ protected:
   // incomplete.
   MYSQL* mysql_handle;
   Query query;
-  std::reference_wrapper<Table const> table;
+  Table const* table;
 
 private:
   Condition condition;
