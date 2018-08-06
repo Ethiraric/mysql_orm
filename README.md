@@ -104,9 +104,6 @@ SELECT * FROM `records` WHERE `records`.`i`=2
 
 Had we written `c<&Record::i>{}=i`, both calls would have been evaluated with `i=4`.
 
-# Known bugs
- * Does not work with `clang`.
-
 # Roadmap
  * Joins.
  * Constraints on multiple columns (`UNIQUE(a, b)`).

@@ -23,6 +23,19 @@
 
 namespace mysql_orm
 {
+namespace details
+{
+// Work around a clang bug with auto template method of templated class.
+template <auto Attr, typename... Columns>
+auto const& getColumn_clang(std::tuple<Columns...> const& cols) noexcept
+{
+  using Column_t = typename meta::
+      FindMappedValue<meta::ColumnAttributeGetter, Attr, Columns...>::type;
+  static_assert(!std::is_same_v<Column_t, void>, "Failed to find attribute");
+  return std::get<Column_t>(cols);
+}
+}
+
 /** A SQL Table.
  *
  * The table can be constructed with a name and columns (instanciations of the
@@ -46,11 +59,11 @@ public:
                   "Columns do not refer to the same model type");
   }
   constexpr Table(Table const& b) = default;
-  constexpr Table(Table&& b) noexcept = default;
+  constexpr Table(Table&& b) = default;
   ~Table() noexcept = default;
 
   constexpr Table& operator=(Table const& rhs) = default;
-  constexpr Table& operator=(Table&& rhs) noexcept = default;
+  constexpr Table& operator=(Table&& rhs) = default;
 
   /** Returns a SQL statement to create the table.
    */
@@ -59,7 +72,9 @@ public:
     return "CREATE TABLE `" + this->table_name + "` (" +
            tupleFoldl(
                [](auto const& acc, auto const& column) {
-                 if constexpr (acc.empty())
+                 if constexpr (std::is_same_v <
+                                   compile_string::CompileString<0> const&,
+                               decltype(acc)>)
                    return "\n  " + column.getSchema();
                  else
                    return acc + ",\n  " + column.getSchema();
@@ -154,10 +169,7 @@ public:
   template <auto Attr>
   auto const& getColumn() const noexcept
   {
-    using Column_t = typename meta::
-        FindMappedValue<meta::ColumnAttributeGetter, Attr, Columns...>::type;
-    static_assert(!std::is_same_v<Column_t, void>, "Failed to find attribute");
-    return std::get<Column_t>(this->columns);
+    return  details::getColumn_clang<Attr, Columns...>(this->columns);
   }
 
   constexpr size_t getNbColumns() const noexcept
@@ -202,7 +214,9 @@ private:
              ") VALUES (" +
              applyN<sizeof...(Attrs)>(
                  [](auto const& acc) {
-                   if constexpr (acc.empty())
+                   if constexpr (std::is_same_v<
+                                     compile_string::CompileString<0> const&,
+                                     decltype(acc)>)
                      return compile_string::CompileString{"?"};
                    else
                      return acc + ", ?";

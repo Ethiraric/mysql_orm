@@ -105,11 +105,11 @@ public:
                     std::is_same_v<lifted_field_type, char const*>))
       throw std::runtime_error("VARCHAR can only be used for text types");
   }
-  constexpr Column(Column const& b) = default;
+  constexpr Column(Column const& b) noexcept = default;
   constexpr Column(Column&& b) noexcept = default;
   ~Column() noexcept = default;
 
-  constexpr Column& operator=(Column const& rhs) = default;
+  constexpr Column& operator=(Column const& rhs) noexcept = default;
   constexpr Column& operator=(Column&& rhs) noexcept = default;
 
   /** Returns the part of the create statement associated with the column.

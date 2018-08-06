@@ -31,12 +31,12 @@ public:
   {
   }
 
-  constexpr Database(Database const& b) noexcept = delete;
-  constexpr Database(Database&& b) noexcept = default;
+  constexpr Database(Database const& b) = delete;
+  constexpr Database(Database&& b) = default;
   ~Database() noexcept = default;
 
-  constexpr Database& operator=(Database const& rhs) noexcept = delete;
-  constexpr Database& operator=(Database&& rhs) noexcept = default;
+  constexpr Database& operator=(Database const& rhs) = delete;
+  constexpr Database& operator=(Database&& rhs) = default;
 
   void execute(std::string const& query)
   {
