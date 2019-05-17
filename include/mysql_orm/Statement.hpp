@@ -37,7 +37,8 @@ public:
       throw MySQLException("Failed to create statement: " +
                            std::string{mysql_error(this->mysql_handle)});
     if (mysql_stmt_prepare(
-            this->stmt.get(), this->sql_query.c_str(), this->sql_query.size()))
+            this->stmt.get(), this->sql_query.c_str(),
+            this->sql_query.size()))
       throw MySQLException("Failed to prepare statement: " +
                            std::string{mysql_error(this->mysql_handle)});
     if constexpr (query_type == QueryType::GetAll)

@@ -17,6 +17,7 @@ class Delete
 {
 public:
   using model_type = typename Table::model_type;
+  using table_type = Table;
   static inline constexpr auto query_type{QueryType::Delete};
 
   constexpr Delete(MYSQL& mysql, Table const& t) noexcept
@@ -46,17 +47,16 @@ public:
   }
 
   template <typename Condition>
-  constexpr WhereQuery<Delete, Table, Condition> operator()(
-      Where<Condition> where)
+  constexpr WhereQuery<Delete, Condition> operator()(Where<Condition> where)
   {
-    return WhereQuery<Delete, Table, Condition>{
+    return WhereQuery<Delete, Condition>{
         *this->mysql_handle, *this, *this->table, std::move(where.condition)};
   }
 
   template <typename Limit>
-  constexpr LimitQuery<Delete, Table, Limit> operator()(Limit limit)
+  constexpr LimitQuery<Delete, Limit> operator()(Limit limit)
   {
-    return LimitQuery<Delete, Table, Limit>{
+    return LimitQuery<Delete, Limit>{
         *this->mysql_handle, *this, *this->table, std::move(limit)};
   }
 

@@ -30,7 +30,8 @@ template <typename Table, auto... Attrs>
 class GetAll
 {
 public:
-  using model_type = typename Table::model_type;
+  using table_type = Table;
+  using model_type = typename table_type::model_type;
   static inline constexpr auto query_type{QueryType::GetAll};
 
   constexpr GetAll(MYSQL& mysql, Table const& t) noexcept
@@ -45,17 +46,16 @@ public:
   constexpr GetAll& operator=(GetAll&& rhs) noexcept = default;
 
   template <typename Condition>
-  constexpr WhereQuery<GetAll, Table, Condition> operator()(
-      Where<Condition> where)
+  constexpr WhereQuery<GetAll, Condition> operator()(Where<Condition> where)
   {
-    return WhereQuery<GetAll, Table, Condition>{
+    return WhereQuery<GetAll, Condition>{
         *this->mysql_handle, *this, *this->table, std::move(where.condition)};
   }
 
   template <typename Limit>
-  constexpr LimitQuery<GetAll, Table, Limit> operator()(Limit limit)
+  constexpr LimitQuery<GetAll, Limit> operator()(Limit limit)
   {
-    return LimitQuery<GetAll, Table, Limit>{
+    return LimitQuery<GetAll, Limit>{
         *this->mysql_handle, *this, *this->table, std::move(limit)};
   }
 

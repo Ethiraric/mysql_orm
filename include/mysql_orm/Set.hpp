@@ -42,11 +42,13 @@ struct Set
  * TODO(ethiraric): Check that all columns from the assignments refer to the
  * model.
  */
-template <typename Query, typename Table, typename Assignments>
+template <typename Query, typename Assignments>
 struct SetQueryImpl
 {
 public:
   using model_type = typename Query::model_type;
+  using table_type = typename Query::table_type;
+  using Table = table_type;
   static inline constexpr auto query_type{Query::query_type};
 
   SetQueryImpl(MYSQL& mysql, Query q, Table const& t, Assignments&& a) noexcept
@@ -66,8 +68,8 @@ public:
   template <typename Condition>
   constexpr auto operator()(Where<Condition> where) noexcept
   {
-    using ContinuationType = QueryContinuation<Query, Table, SetQueryImpl>;
-    return WhereQuery<ContinuationType, Table, Condition>{
+    using ContinuationType = QueryContinuation<Query, SetQueryImpl>;
+    return WhereQuery<ContinuationType, Condition>{
         *this->mysql_handle,
         static_cast<ContinuationType&>(*this),
         *this->table,
@@ -110,9 +112,8 @@ private:
   Assignments assignments;
 };
 
-template <typename Query, typename Table, typename Condition>
-using SetQuery =
-    QueryContinuation<Query, Table, SetQueryImpl<Query, Table, Condition>>;
+template <typename Query, typename Condition>
+using SetQuery = QueryContinuation<Query, SetQueryImpl<Query, Condition>>;
 }
 
 #endif /* !MYSQL_ORM_SET_HPP_ */

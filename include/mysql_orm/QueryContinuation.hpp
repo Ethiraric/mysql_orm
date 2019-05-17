@@ -38,11 +38,14 @@ namespace mysql_orm
  * If one exists in `Continuation`, `QueryContinuation` will use this one. It
  * will otherwise directly forward the call to `Query`.
  */
-template <typename Query, typename Table, typename Continuation>
+template <typename Query, typename Continuation>
 class QueryContinuation : public Continuation
 {
 public:
   using model_type = typename Query::model_type;
+  using table_type = typename Query::table_type;
+  using Table = table_type;
+
   static inline constexpr auto query_type{Query::query_type};
 
   template <typename... ContinuationArgs>
@@ -164,9 +167,8 @@ private:
   }
 };
 
-template <typename Query, typename Table, typename Continuation>
-QueryContinuation(Query, Table, Continuation)
-    ->QueryContinuation<Query, Table, Continuation>;
+template <typename Query, typename Continuation>
+QueryContinuation(Query, Continuation)->QueryContinuation<Query, Continuation>;
 }
 
 #endif /* !MYSQL_ORM_QUERYCONTINUATION_HPP_ */

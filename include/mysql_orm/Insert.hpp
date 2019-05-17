@@ -17,6 +17,7 @@ class Insert
 {
 public:
   using model_type = typename Table::model_type;
+  using table_type = Table;
   static inline constexpr auto query_type{QueryType::Insert};
 
   constexpr Insert(MYSQL& mysql,

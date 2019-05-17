@@ -17,6 +17,7 @@ class Update
 {
 public:
   using model_type = typename Table::model_type;
+  using table_type = Table;
   static inline constexpr auto query_type{QueryType::Update};
 
   constexpr Update(MYSQL& mysql, Table const& t) noexcept
@@ -36,10 +37,10 @@ public:
   }
 
   template <typename Assignments>
-  constexpr SetQuery<Update, Table, Assignments> operator()(
+  constexpr SetQuery<Update, Assignments> operator()(
       Set<Assignments> set)
   {
-    return SetQuery<Update, Table, Assignments>{
+    return SetQuery<Update, Assignments>{
         *this->mysql_handle, *this, *this->table, std::move(set.assignments)};
   }
 

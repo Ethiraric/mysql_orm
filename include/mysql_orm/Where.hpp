@@ -53,11 +53,14 @@ public:
  * TODO(ethiraric): Check that all columns from the conditions refer to the
  * model.
  */
-template <typename Query, typename Table, typename Condition>
+template <typename Query, typename Condition>
 class WhereQueryImpl
 {
 public:
   using model_type = typename Query::model_type;
+  using table_type = typename Query::table_type;
+  using Table = table_type;
+
   static inline constexpr auto query_type{Query::query_type};
 
   constexpr WhereQueryImpl(MYSQL& mysql,
@@ -86,8 +89,8 @@ public:
   template <typename Limit>
   constexpr auto operator()(Limit limit)
   {
-    using ContinuationType = QueryContinuation<Query, Table, WhereQueryImpl>;
-    return LimitQuery<ContinuationType, Table, Limit>{
+    using ContinuationType = QueryContinuation<Query, WhereQueryImpl>;
+    return LimitQuery<ContinuationType, Limit>{
         *this->mysql_handle,
         static_cast<ContinuationType&>(*this),
         *this->table,
@@ -124,9 +127,8 @@ private:
   Condition condition;
 };
 
-template <typename Query, typename Table, typename Condition>
-using WhereQuery =
-    QueryContinuation<Query, Table, WhereQueryImpl<Query, Table, Condition>>;
+template <typename Query, typename Condition>
+using WhereQuery = QueryContinuation<Query, WhereQueryImpl<Query, Condition>>;
 }
 
 #endif /* !MYSQL_ORM_WHERE_HPP_ */

@@ -73,11 +73,13 @@ struct Limit<0>
  * `buildquery` returns the SQL query as a std::string.
  * `build` returns a `Statement`, which can later be `execute()`d.
  */
-template <typename Query, typename Table, typename TLimit>
+template <typename Query, typename TLimit>
 class LimitQueryImpl
 {
 public:
   using model_type = typename Query::model_type;
+  using table_type = typename Query::table_type;
+  using Table = table_type;
 
   LimitQueryImpl(MYSQL& mysql, Query q, Table const& t, TLimit&& l) noexcept
     : mysql_handle{&mysql}, query{std::move(q)}, table{&t}, limit{std::move(l)}
@@ -112,9 +114,8 @@ private:
   TLimit limit;
 };
 
-template <typename Query, typename Table, typename Limit>
-using LimitQuery =
-    QueryContinuation<Query, Table, LimitQueryImpl<Query, Table, Limit>>;
+template <typename Query, typename Limit>
+using LimitQuery = QueryContinuation<Query, LimitQueryImpl<Query, Limit>>;
 }
 
 #endif /* !MYSQL_ORM_LIMIT_HPP_ */
