@@ -1,6 +1,6 @@
 #include <mysql_orm/Table.hpp>
 
-#include <catch.hpp>
+#include <catch_amalgamated.hpp>
 
 #include <string>
 

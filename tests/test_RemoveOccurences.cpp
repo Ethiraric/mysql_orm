@@ -1,6 +1,6 @@
 #include <mysql_orm/meta/RemoveOccurences.hpp>
 
-#include <catch.hpp>
+#include <catch_amalgamated.hpp>
 
 using mysql_orm::meta::Pack;
 using mysql_orm::meta::RemoveOccurences_t;

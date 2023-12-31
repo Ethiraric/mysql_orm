@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-#include <catch.hpp>
+#include <catch_amalgamated.hpp>
 
 using mysql_orm::meta::AppendPack_t;
 using mysql_orm::meta::AppendValuePack_t;

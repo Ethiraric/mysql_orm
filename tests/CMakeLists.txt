@@ -6,6 +6,7 @@ project("mysql_orm")
 #sources files
 set(SRCS
   main.cpp
+  catch_amalgamated.cpp
   test_Column.cpp
   test_ColumnTags.cpp
   test_Database.cpp

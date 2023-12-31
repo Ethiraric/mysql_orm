@@ -1,6 +1,6 @@
 #include <mysql_orm/Column.hpp>
 
-#include <catch.hpp>
+#include <catch_amalgamated.hpp>
 
 #include <Record.hh>
 #include <mysql_orm/Database.hpp>

@@ -1,6 +1,6 @@
 #include <mysql_orm/ColumnConstraints.hpp>
 
-#include <catch.hpp>
+#include <catch_amalgamated.hpp>
 
 using namespace mysql_orm;
 
